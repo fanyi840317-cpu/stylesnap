@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-zip/
+
+# Vite / TypeScript
+*.tsbuildinfo
+.vite/
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Test artifacts
+coverage/
+
+# Generated icons (kept in public/icons/ for manifest; ignore src/assets/icons duplicates)
+src/assets/icons/
