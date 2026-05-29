@@ -66,14 +66,27 @@ export default function App() {
 
   // ── Toggle inspector ────────────────────────────────────────────────────
   const toggleInspector = useCallback(async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab?.id) return
-    if (isInspecting) {
-      await chrome.tabs.sendMessage(tab.id, { type: 'DISABLE_INSPECTOR' })
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (!tab?.id) return
+      
+      // Cannot inspect chrome:// or restricted URLs
+      if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('edge://') || tab.url?.startsWith('about:')) {
+        alert('Cannot inspect this page. Please try on a normal website.')
+        return
+      }
+
+      if (isInspecting) {
+        await chrome.tabs.sendMessage(tab.id, { type: 'DISABLE_INSPECTOR' })
+        setIsInspecting(false)
+      } else {
+        await chrome.tabs.sendMessage(tab.id, { type: 'INIT_INSPECTOR' })
+        setIsInspecting(true)
+      }
+    } catch (err) {
+      console.error('Inspector toggle failed:', err)
+      alert('Failed to connect to the page. Please refresh the page and try again.')
       setIsInspecting(false)
-    } else {
-      await chrome.tabs.sendMessage(tab.id, { type: 'INIT_INSPECTOR' })
-      setIsInspecting(true)
     }
   }, [isInspecting])
 
