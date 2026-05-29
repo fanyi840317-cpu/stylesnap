@@ -58,6 +58,9 @@ export default function App() {
         case 'DISABLE_INSPECTOR':
           setIsInspecting(false)
           break
+        case 'INIT_INSPECTOR':
+          setIsInspecting(true)
+          break
       }
     }
     chrome.runtime.onMessage.addListener(handler)

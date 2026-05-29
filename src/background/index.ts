@@ -43,6 +43,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true // Keep channel open for async response
   }
 
+  // Open side panel from content script
+  if (message.type === 'OPEN_SIDE_PANEL') {
+    const tabId = sender.tab?.id
+    const windowId = sender.tab?.windowId
+    if (tabId && windowId) {
+      chrome.sidePanel.open({ windowId }).catch(console.error)
+    }
+    sendResponse({ ok: true })
+    return false
+  }
+
   // Inject/enable inspector, or edit CSS on current tab
   if (['INIT_INSPECTOR', 'DISABLE_INSPECTOR', 'EDIT_CSS'].includes(message.type)) {
     // Find active tab

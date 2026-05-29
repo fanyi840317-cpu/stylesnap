@@ -155,6 +155,16 @@ function enableInspector() {
   document.addEventListener('mousemove', onMouseMove, true)
   document.addEventListener('click', onClick, true)
   document.addEventListener('keydown', onKeyDown, true)
+
+  const btn = document.getElementById(FLOATING_BTN_ID)
+  if (btn) {
+    btn.style.backgroundColor = '#10b981'
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    `
+  }
 }
 
 function disableInspector() {
@@ -164,6 +174,89 @@ function disableInspector() {
   document.removeEventListener('keydown', onKeyDown, true)
   removeHighlight()
   hideOverlay()
+
+  const btn = document.getElementById(FLOATING_BTN_ID)
+  if (btn) {
+    btn.style.backgroundColor = '#6366f1'
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21 21-4.35-4.35" />
+        <circle cx="11" cy="11" r="8" />
+      </svg>
+    `
+  }
+}
+
+// ─── Floating Button UI ────────────────────────────────────────────────
+
+const FLOATING_BTN_ID = 'stylesnap-floating-btn'
+
+function initFloatingButton() {
+  if (document.getElementById(FLOATING_BTN_ID)) return
+
+  const btn = document.createElement('button')
+  btn.id = FLOATING_BTN_ID
+  btn.setAttribute('data-stylesnap', 'true')
+  btn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 21-4.35-4.35" />
+      <circle cx="11" cy="11" r="8" />
+    </svg>
+  `
+  
+  // Style the button directly to ensure it works regardless of external CSS
+  Object.assign(btn.style, {
+    position: 'fixed',
+    bottom: '24px',
+    right: '24px',
+    width: '48px',
+    height: '48px',
+    borderRadius: '24px',
+    backgroundColor: '#6366f1',
+    color: '#ffffff',
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: '2147483647',
+    transition: 'transform 0.2s, background-color 0.2s'
+  })
+
+  btn.addEventListener('mouseenter', () => {
+    btn.style.transform = 'scale(1.05)'
+    btn.style.backgroundColor = '#4f46e5'
+  })
+  btn.addEventListener('mouseleave', () => {
+    btn.style.transform = 'scale(1)'
+    btn.style.backgroundColor = '#6366f1'
+  })
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Toggle inspector
+    if (isActive) {
+      disableInspector()
+      chrome.runtime.sendMessage({ type: 'DISABLE_INSPECTOR' }).catch(() => {})
+    } else {
+      enableInspector()
+      chrome.runtime.sendMessage({ type: 'INIT_INSPECTOR' }).catch(() => {})
+      // Try to open side panel
+      chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' }).catch(() => {})
+    }
+  })
+
+  document.body.appendChild(btn)
+}
+
+// Initialize on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFloatingButton)
+} else {
+  initFloatingButton()
 }
 
 // ─── Message handling ─────────────────────────────────────────────────
