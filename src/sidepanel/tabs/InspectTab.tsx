@@ -5,6 +5,7 @@ import type { ParsedCSS } from '@/shared/types'
 import CodeBlock from '../components/CodeBlock'
 import PropertyRow from '../components/PropertyRow'
 import { formatCSS } from '@/lib/css-extractor'
+import { useI18n } from '@/lib/i18n'
 
 interface HoveredPayload {
   parsedCSS: ParsedCSS
@@ -31,6 +32,7 @@ export default function InspectTab({
   isPro,
   onUpgrade,
 }: InspectTabProps) {
+  const { t } = useI18n()
   const [showRaw, setShowRaw]         = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(['layout', 'typography', 'colors', 'spacing'])
@@ -70,7 +72,7 @@ export default function InspectTab({
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </div>
-        <p className="text-slate-400 text-sm">点击上方的 <strong>开始审查</strong><br/>或者网页右下角的悬浮按钮<br/>然后将鼠标悬停在任意元素上</p>
+        <p className="text-slate-400 text-sm" dangerouslySetInnerHTML={{ __html: t('emptyInspect1') }}></p>
       </div>
     )
   }
@@ -81,7 +83,7 @@ export default function InspectTab({
         <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
           <span className="text-indigo-400 text-lg animate-pulse">◎</span>
         </div>
-        <p className="text-slate-400 text-sm">将鼠标悬停在元素上以查看样式</p>
+        <p className="text-slate-400 text-sm">{t('emptyInspect2')}</p>
       </div>
     )
   }
@@ -130,13 +132,13 @@ export default function InspectTab({
           onClick={() => setShowRaw(false)}
           className={clsx('text-xs px-2 py-0.5 rounded', !showRaw ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300')}
         >
-          可视属性
+          {t('properties')}
         </button>
         <button
           onClick={() => setShowRaw(true)}
           className={clsx('text-xs px-2 py-0.5 rounded', showRaw ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300')}
         >
-          原始 CSS
+          {t('rawCSS')}
         </button>
         <div className="ml-auto flex gap-2">
           <button
@@ -144,7 +146,7 @@ export default function InspectTab({
             className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-200 transition-colors"
           >
             {copiedKey === 'css' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-            复制 CSS
+            {t('copyCSS')}
           </button>
           <button
             onClick={() => {
@@ -158,7 +160,7 @@ export default function InspectTab({
           >
             {!isPro && <Lock size={10} />}
             {copiedKey === 'tw' ? <Check size={10} className="text-emerald-400" /> : null}
-            复制 Tailwind
+            {t('copyTW')}
           </button>
         </div>
       </div>
@@ -188,7 +190,7 @@ export default function InspectTab({
                     tailwindClasses.join(' ')
                   ) : (
                     <span className="flex items-center gap-1.5">
-                      <Lock size={10} /> 升级以复制 Tailwind 类名
+                      <Lock size={10} /> {t('upgradeToCopyTW')}
                     </span>
                   )}
                 </div>

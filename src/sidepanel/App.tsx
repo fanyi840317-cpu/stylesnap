@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Scan, Package, Palette, Settings, Crown } from 'lucide-react'
+import { Scan, Package, Palette, Settings, Crown, Languages } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { clsx } from 'clsx'
 import InspectTab    from './tabs/InspectTab'
@@ -9,6 +9,7 @@ import SettingsModal from './components/SettingsModal'
 import UpgradeModal  from './components/UpgradeModal'
 import type { ParsedCSS, LicenseStatus } from '@/shared/types'
 import { getLicenseStatus } from '@/lib/license'
+import { I18nProvider, useI18n } from '@/lib/i18n'
 
 // ─── Message types from content script ──────────────────────────────────────
 interface HoveredPayload {
@@ -26,13 +27,14 @@ interface ClickedPayload extends HoveredPayload {
 
 type Tab = 'inspect' | 'export' | 'tokens'
 
-const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
-  { id: 'inspect', label: '审查', Icon: Scan    },
-  { id: 'export',  label: '导出',  Icon: Package },
-  { id: 'tokens',  label: '变量',  Icon: Palette },
+const TABS: { id: Tab; iconKey: 'inspect' | 'export' | 'tokens'; Icon: LucideIcon }[] = [
+  { id: 'inspect', iconKey: 'inspect', Icon: Scan    },
+  { id: 'export',  iconKey: 'export',  Icon: Package },
+  { id: 'tokens',  iconKey: 'tokens',  Icon: Palette },
 ]
 
-export default function App() {
+function AppContent() {
+  const { t, lang, setLang } = useI18n()
   const [activeTab,      setActiveTab]      = useState<Tab>('inspect')
   const [isInspecting,   setIsInspecting]   = useState(false)
   const [hoveredEl,      setHoveredEl]      = useState<HoveredPayload | null>(null)
@@ -75,7 +77,7 @@ export default function App() {
       
       // Cannot inspect chrome:// or restricted URLs
       if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('edge://') || tab.url?.startsWith('about:')) {
-        alert('Cannot inspect this page. Please try on a normal website.')
+        alert(t('cannotInspect'))
         return
       }
 
@@ -88,10 +90,10 @@ export default function App() {
       }
     } catch (err) {
       console.error('Inspector toggle failed:', err)
-      alert('Failed to connect to the page. Please refresh the page and try again.')
+      alert(t('failedConnect'))
       setIsInspecting(false)
     }
-  }, [isInspecting])
+  }, [isInspecting, t])
 
   // Active CSS: prefer clicked element, fall back to hovered
   const currentCSS: ParsedCSS | null =
@@ -116,19 +118,26 @@ export default function App() {
           )}
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+            className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+          >
+            <Languages size={14} />
+          </button>
           {!isPro && (
             <button
               onClick={() => setShowUpgrade(true)}
               className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
             >
               <Crown size={10} />
-              专业版 $29
+              {t('pro')}
             </button>
           )}
           <button
             onClick={() => setShowSettings(true)}
             className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-            title="设置"
+            title={t('settings')}
           >
             <Settings size={14} />
           </button>
@@ -147,17 +156,17 @@ export default function App() {
           )}
         >
           <Scan size={14} className={isInspecting ? 'animate-pulse' : ''} />
-          {isInspecting ? '审查中… (按 ESC 停止)' : '开始审查'}
+          {isInspecting ? t('inspecting') : t('startInspecting')}
         </button>
 
         {license && !isPro && (
           <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500">
-            <span>免费额度: {license.dailyUsed ?? 0} / {license.dailyLimit} (今日)</span>
+            <span>{t('freeQuota', { used: license.dailyUsed ?? 0, limit: license.dailyLimit })}</span>
             <button
               onClick={() => setShowUpgrade(true)}
               className="text-indigo-400 hover:text-indigo-300 transition-colors"
             >
-              升级无限制版本 →
+              {t('upgradeUnlimited')}
             </button>
           </div>
         )}
@@ -165,7 +174,7 @@ export default function App() {
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
       <div className="flex border-b border-slate-800 shrink-0">
-        {TABS.map(({ id, label, Icon }) => (
+        {TABS.map(({ id, iconKey, Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
@@ -177,7 +186,7 @@ export default function App() {
             )}
           >
             <Icon size={12} />
-            {label}
+            {t(iconKey)}
           </button>
         ))}
       </div>
@@ -217,5 +226,13 @@ export default function App() {
         <UpgradeModal onClose={() => setShowUpgrade(false)} />
       )}
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   )
 }

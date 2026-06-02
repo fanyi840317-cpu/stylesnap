@@ -10,6 +10,7 @@ import {
   tokensToCSSVariables,
 } from '../../lib/token-extractor'
 import type { DesignTokens, LicenseStatus } from '../../shared/types'
+import { useI18n } from '@/lib/i18n'
 
 interface TokensTabProps {
   license: LicenseStatus
@@ -117,6 +118,7 @@ const SpacingScale: React.FC<{ spacing: DesignTokens['spacing'] }> = ({ spacing 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export const TokensTab: React.FC<TokensTabProps> = ({ license, onUpgrade }) => {
+  const { t } = useI18n()
   const [tokens, setTokens]       = useState<DesignTokens | null>(null)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
@@ -194,44 +196,39 @@ export const TokensTab: React.FC<TokensTabProps> = ({ license, onUpgrade }) => {
           <div className="mx-3 mt-3 flex items-start gap-2 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2.5">
             <Zap size={13} className="text-amber-400 flex-none mt-0.5" />
             <div className="flex-1">
-              <p className="text-xs text-amber-300 font-medium">Pro feature — Design Token Extraction</p>
+              <p className="text-xs text-amber-300 font-medium">{t('proTokenTitle')}</p>
               <p className="text-[11px] text-amber-400/70 mt-0.5">
-                Extract your entire design system: color palette, typography scale, spacing, and more.
+                {t('proTokenDesc')}
               </p>
             </div>
+            <button
+              onClick={onUpgrade}
+              className="flex-none text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-2 py-1 rounded transition-colors"
+            >
+              {t('upgrade')}
+            </button>
           </div>
         )}
 
-        <div className="flex flex-col items-center justify-center flex-1 px-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-900/60 to-indigo-900/60 border border-purple-700/40 flex items-center justify-center mb-4">
-            <Sparkles size={24} className="text-purple-400" />
-          </div>
-          <h3 className="text-sm font-semibold text-gray-200 mb-1">Extract Design Tokens</h3>
-          <p className="text-xs text-gray-500 mb-6 max-w-[220px]">
-            Scan the entire page to extract your color palette, typography, spacing, and more.
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <Sparkles size={32} className="text-indigo-500/50 mb-4" />
+          <h3 className="text-sm font-semibold text-gray-200 mb-1">{t('extractTokensTitle')}</h3>
+          <p className="text-xs text-gray-400 mb-6 max-w-[240px] leading-relaxed">
+            {t('extractTokensDesc')}
           </p>
+          
           <button
             onClick={handleExtract}
-            disabled={loading}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              isPro
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-900/40 active:scale-95'
-                : 'bg-amber-500 hover:bg-amber-400 text-black'
-            } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+            disabled={loading || !isPro}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            {loading ? (
-              <><RefreshCw size={14} className="animate-spin" /> Scanning page…</>
-            ) : isPro ? (
-              <><Sparkles size={14} /> Extract Tokens</>
-            ) : (
-              <><Zap size={14} /> Unlock — $29</>
-            )}
+            {loading ? <RefreshCw size={16} className="animate-spin" /> : <Palette size={16} />}
+            {loading ? t('scanning') : t('extractTokensBtn')}
           </button>
 
           {error && (
-            <div className="mt-4 flex items-start gap-2 bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2 text-left">
-              <AlertCircle size={13} className="text-red-400 flex-none mt-0.5" />
-              <p className="text-xs text-red-300">{error}</p>
+            <div className="mt-4 flex items-center gap-1.5 text-xs text-red-400 bg-red-400/10 px-3 py-1.5 rounded">
+              <AlertCircle size={12} /> {error}
             </div>
           )}
         </div>

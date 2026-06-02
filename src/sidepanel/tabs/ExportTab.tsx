@@ -7,6 +7,7 @@ import { CodeBlock }    from '../components/CodeBlock'
 import { generateReactComponent, generateVueComponent } from '../../lib/code-generator'
 import { cssToTailwind }   from '../../lib/tailwind-mapper'
 import type { ParsedCSS, LicenseStatus } from '../../shared/types'
+import { useI18n } from '@/lib/i18n'
 
 interface ExportTabProps {
   element: ParsedCSS | null
@@ -25,6 +26,7 @@ const FORMAT_OPTIONS: { value: ExportFormat; label: string; icon: React.ReactNod
 ]
 
 export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrade }) => {
+  const { t } = useI18n()
   const [format, setFormat]        = useState<ExportFormat>('tailwind')
   const [styleMode, setStyleMode]  = useState<StyleMode>('tailwind')
   const [copied, setCopied]        = useState(false)
@@ -111,10 +113,10 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
         <Code2 size={32} className="text-gray-600 mb-3" />
         <p className="text-sm text-gray-400">
-          Hover over an element and click to select it
+          {t('selectElement')}
         </p>
         <p className="text-xs text-gray-600 mt-1">
-          Then use Export to generate component code
+          {t('useExport')}
         </p>
       </div>
     )
@@ -156,7 +158,7 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
       {(format === 'react' || format === 'vue') && (
         <div className="px-3 pb-1">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 flex-none">Style:</span>
+            <span className="text-[11px] text-gray-500 flex-none">{t('style')}</span>
             {(['tailwind', 'cssmodule', 'inline'] as StyleMode[]).map(m => (
               <button
                 key={m}
@@ -167,7 +169,7 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
                     : 'text-gray-400 hover:text-gray-200 bg-gray-800'
                 }`}
               >
-                {m === 'cssmodule' ? 'CSS Module' : m.charAt(0).toUpperCase() + m.slice(1)}
+                {m === 'cssmodule' ? 'CSS Module' : m === 'tailwind' ? 'Tailwind' : t('inline')}
               </button>
             ))}
           </div>
@@ -179,16 +181,16 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
         <div className="mx-3 mb-2 flex items-start gap-2 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2">
           <AlertCircle size={13} className="text-amber-400 flex-none mt-0.5" />
           <div>
-            <p className="text-xs text-amber-300 font-medium">Pro feature</p>
+            <p className="text-xs text-amber-300 font-medium">{t('proFeature')}</p>
             <p className="text-[11px] text-amber-400/70">
-              Upgrade to unlock {FORMAT_OPTIONS.find(o => o.value === format)?.label} export.
+              {t('upgradeToUnlock', { format: FORMAT_OPTIONS.find(o => o.value === format)?.label || '' })}
             </p>
           </div>
           <button
             onClick={onUpgrade}
             className="ml-auto flex-none text-[11px] bg-amber-500 hover:bg-amber-400 text-black font-semibold px-2 py-1 rounded transition-colors"
           >
-            Upgrade
+            {t('upgrade')}
           </button>
         </div>
       )}

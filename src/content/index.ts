@@ -158,16 +158,21 @@ function enableInspector() {
 
   const btn = document.getElementById(FLOATING_BTN_ID)
   if (btn) {
-    btn.style.background = 'linear-gradient(135deg, #10b981, #059669)'
-    btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)'
-    btn.innerHTML = `
-      <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-        </svg>
-        <span>停止审查</span>
-      </div>
-    `
+    chrome.storage.local.get(['language'], (res) => {
+      const isEn = res.language === 'en'
+      const stopText = isEn ? 'Stop Inspecting' : '停止审查'
+      
+      btn.style.background = 'linear-gradient(135deg, #10b981, #059669)'
+      btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)'
+      btn.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </svg>
+          <span>${stopText}</span>
+        </div>
+      `
+    })
   }
 }
 
@@ -181,17 +186,22 @@ function disableInspector() {
 
   const btn = document.getElementById(FLOATING_BTN_ID)
   if (btn) {
-    btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-    btn.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)'
-    btn.innerHTML = `
-      <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m21 21-4.35-4.35" />
-          <circle cx="11" cy="11" r="8" />
-        </svg>
-        <span>审查样式</span>
-      </div>
-    `
+    chrome.storage.local.get(['language'], (res) => {
+      const isEn = res.language === 'en'
+      const startText = isEn ? 'Inspect Style' : '审查样式'
+      
+      btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+      btn.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)'
+      btn.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21 21-4.35-4.35" />
+            <circle cx="11" cy="11" r="8" />
+          </svg>
+          <span>${startText}</span>
+        </div>
+      `
+    })
   }
 }
 
@@ -205,15 +215,22 @@ function initFloatingButton() {
   const btn = document.createElement('button')
   btn.id = FLOATING_BTN_ID
   btn.setAttribute('data-stylesnap', 'true')
-  btn.innerHTML = `
-    <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m21 21-4.35-4.35" />
-        <circle cx="11" cy="11" r="8" />
-      </svg>
-      <span>审查样式</span>
-    </div>
-  `
+  
+  // Try to load user's preferred language for the floating button
+  chrome.storage.local.get(['language'], (res) => {
+    const isEn = res.language === 'en'
+    const startText = isEn ? 'Inspect Style' : '审查样式'
+    
+    btn.innerHTML = `
+      <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21 21-4.35-4.35" />
+          <circle cx="11" cy="11" r="8" />
+        </svg>
+        <span>${startText}</span>
+      </div>
+    `
+  })
   
   // Style the button directly to ensure it works regardless of external CSS
   Object.assign(btn.style, {
@@ -273,6 +290,17 @@ if (document.readyState === 'loading') {
 }
 
 // ─── Message handling ─────────────────────────────────────────────────
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.language) {
+    // Refresh button text
+    if (isActive) {
+      enableInspector() // Re-apply active state UI
+    } else {
+      disableInspector() // Re-apply inactive state UI
+    }
+  }
+})
 
 chrome.runtime.onMessage.addListener((message: { type: string; payload?: unknown }, _sender, sendResponse) => {
   switch (message.type) {
