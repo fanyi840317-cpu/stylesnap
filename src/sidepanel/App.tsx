@@ -27,9 +27,9 @@ interface ClickedPayload extends HoveredPayload {
 type Tab = 'inspect' | 'export' | 'tokens'
 
 const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
-  { id: 'inspect', label: 'Inspect', Icon: Scan    },
-  { id: 'export',  label: 'Export',  Icon: Package },
-  { id: 'tokens',  label: 'Tokens',  Icon: Palette },
+  { id: 'inspect', label: '审查', Icon: Scan    },
+  { id: 'export',  label: '导出',  Icon: Package },
+  { id: 'tokens',  label: '变量',  Icon: Palette },
 ]
 
 export default function App() {
@@ -122,13 +122,13 @@ export default function App() {
               className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
             >
               <Crown size={10} />
-              Pro $29
+              专业版 $29
             </button>
           )}
           <button
             onClick={() => setShowSettings(true)}
             className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-            title="Settings"
+            title="设置"
           >
             <Settings size={14} />
           </button>
@@ -147,17 +147,17 @@ export default function App() {
           )}
         >
           <Scan size={14} className={isInspecting ? 'animate-pulse' : ''} />
-          {isInspecting ? 'Inspecting… (ESC to stop)' : 'Start Inspecting'}
+          {isInspecting ? '审查中… (按 ESC 停止)' : '开始审查'}
         </button>
 
         {license && !isPro && (
           <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500">
-            <span>Free: {license.dailyUsed ?? 0} / {license.dailyLimit} today</span>
+            <span>免费额度: {license.dailyUsed ?? 0} / {license.dailyLimit} (今日)</span>
             <button
               onClick={() => setShowUpgrade(true)}
               className="text-indigo-400 hover:text-indigo-300 transition-colors"
             >
-              Upgrade for unlimited →
+              升级无限制版本 →
             </button>
           </div>
         )}

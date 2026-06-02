@@ -70,7 +70,7 @@ export default function InspectTab({
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </div>
-        <p className="text-slate-400 text-sm">Click <strong>Start Inspecting</strong> above, then hover over any element</p>
+        <p className="text-slate-400 text-sm">点击上方的 <strong>开始审查</strong><br/>或者网页右下角的悬浮按钮<br/>然后将鼠标悬停在任意元素上</p>
       </div>
     )
   }
@@ -81,7 +81,7 @@ export default function InspectTab({
         <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
           <span className="text-indigo-400 text-lg animate-pulse">◎</span>
         </div>
-        <p className="text-slate-400 text-sm">Hover over an element to inspect it</p>
+        <p className="text-slate-400 text-sm">将鼠标悬停在元素上以查看样式</p>
       </div>
     )
   }
@@ -130,13 +130,13 @@ export default function InspectTab({
           onClick={() => setShowRaw(false)}
           className={clsx('text-xs px-2 py-0.5 rounded', !showRaw ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300')}
         >
-          Properties
+          可视属性
         </button>
         <button
           onClick={() => setShowRaw(true)}
           className={clsx('text-xs px-2 py-0.5 rounded', showRaw ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300')}
         >
-          Raw CSS
+          原始 CSS
         </button>
         <div className="ml-auto flex gap-2">
           <button
@@ -144,7 +144,7 @@ export default function InspectTab({
             className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-200 transition-colors"
           >
             {copiedKey === 'css' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-            Copy CSS
+            复制 CSS
           </button>
           <button
             onClick={() => {
@@ -158,7 +158,7 @@ export default function InspectTab({
           >
             {!isPro && <Lock size={10} />}
             {copiedKey === 'tw' ? <Check size={10} className="text-emerald-400" /> : null}
-            Copy TW
+            复制 Tailwind
           </button>
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function InspectTab({
                     tailwindClasses.join(' ')
                   ) : (
                     <span className="flex items-center gap-1.5">
-                      <Lock size={10} /> Upgrade to copy Tailwind classes
+                      <Lock size={10} /> 升级以复制 Tailwind 类名
                     </span>
                   )}
                 </div>

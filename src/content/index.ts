@@ -158,11 +158,15 @@ function enableInspector() {
 
   const btn = document.getElementById(FLOATING_BTN_ID)
   if (btn) {
-    btn.style.backgroundColor = '#10b981'
+    btn.style.background = 'linear-gradient(135deg, #10b981, #059669)'
+    btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)'
     btn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-      </svg>
+      <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        </svg>
+        <span>停止审查</span>
+      </div>
     `
   }
 }
@@ -177,12 +181,16 @@ function disableInspector() {
 
   const btn = document.getElementById(FLOATING_BTN_ID)
   if (btn) {
-    btn.style.backgroundColor = '#6366f1'
+    btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+    btn.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)'
     btn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m21 21-4.35-4.35" />
-        <circle cx="11" cy="11" r="8" />
-      </svg>
+      <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21 21-4.35-4.35" />
+          <circle cx="11" cy="11" r="8" />
+        </svg>
+        <span>审查样式</span>
+      </div>
     `
   }
 }
@@ -198,10 +206,13 @@ function initFloatingButton() {
   btn.id = FLOATING_BTN_ID
   btn.setAttribute('data-stylesnap', 'true')
   btn.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m21 21-4.35-4.35" />
-      <circle cx="11" cy="11" r="8" />
-    </svg>
+    <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21 21-4.35-4.35" />
+        <circle cx="11" cy="11" r="8" />
+      </svg>
+      <span>审查样式</span>
+    </div>
   `
   
   // Style the button directly to ensure it works regardless of external CSS
@@ -209,28 +220,30 @@ function initFloatingButton() {
     position: 'fixed',
     bottom: '24px',
     right: '24px',
-    width: '48px',
-    height: '48px',
-    borderRadius: '24px',
-    backgroundColor: '#6366f1',
+    width: 'auto',
+    padding: '0 16px',
+    height: '44px',
+    borderRadius: '22px',
+    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     color: '#ffffff',
-    border: 'none',
+    border: '1px solid rgba(255,255,255,0.1)',
     boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: '2147483647',
-    transition: 'transform 0.2s, background-color 0.2s'
+    transition: 'transform 0.2s, filter 0.2s',
+    userSelect: 'none'
   })
 
   btn.addEventListener('mouseenter', () => {
-    btn.style.transform = 'scale(1.05)'
-    btn.style.backgroundColor = '#4f46e5'
+    btn.style.transform = 'scale(1.05) translateY(-2px)'
+    btn.style.filter = 'brightness(1.1)'
   })
   btn.addEventListener('mouseleave', () => {
-    btn.style.transform = 'scale(1)'
-    btn.style.backgroundColor = '#6366f1'
+    btn.style.transform = 'scale(1) translateY(0)'
+    btn.style.filter = 'brightness(1)'
   })
 
   btn.addEventListener('click', (e) => {
