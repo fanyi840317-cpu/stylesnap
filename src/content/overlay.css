@@ -25,7 +25,21 @@
   user-select: text;
 }
 
-#stylesnap-overlay.ss-interactive::after {
+/* English hint */
+#stylesnap-overlay.ss-interactive[data-lang="en"]::after {
+  content: '✓ Locked (text is selectable)';
+  display: block;
+  text-align: center;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255,255,255,0.15);
+  font-size: 10px;
+  font-family: system-ui, sans-serif;
+  color: #34d399; /* emerald-400 */
+}
+
+/* Chinese hint */
+#stylesnap-overlay.ss-interactive[data-lang="zh"]::after {
   content: '✓ 已锁定 (可框选复制)';
   display: block;
   text-align: center;

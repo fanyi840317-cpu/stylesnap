@@ -25,6 +25,12 @@ function getOrCreateOverlay(): HTMLElement {
     overlay = document.createElement('div')
     overlay.id = OVERLAY_ID
     overlay.setAttribute('data-stylesnap', 'true')
+    
+    // Set initial language attribute
+    chrome.storage.local.get(['language'], (res) => {
+      overlay!.setAttribute('data-lang', res.language || 'en')
+    })
+    
     document.body.appendChild(overlay)
   }
   return overlay
@@ -152,14 +158,22 @@ function onClick(e: MouseEvent) {
   if (el && el.closest('#' + OVERLAY_ID)) {
     return
   }
-  
-  if (!el || el.closest('[data-stylesnap]')) return
+
+  // 点击了网页中的空白处或者扩展自身的UI（悬浮按钮）
+  if (!el || el.closest('[data-stylesnap]')) {
+    if (lockedElement) {
+      unlockElement()
+      chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
+      hideOverlay()
+    }
+    return
+  }
 
   e.preventDefault()
   e.stopPropagation()
 
   if (lockedElement === el) {
-    // 再次点击取消锁定
+    // 再次点击已锁定的元素，取消锁定
     unlockElement()
     chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
     // 手动触发一次 hover 以更新高亮和信息框
@@ -355,11 +369,17 @@ if (document.readyState === 'loading') {
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.language) {
-    // Refresh button text
+    const lang = changes.language.newValue
+    // Update floating button text
     if (isActive) {
       enableInspector() // Re-apply active state UI
     } else {
       disableInspector() // Re-apply inactive state UI
+    }
+    // Update overlay language
+    const overlay = document.getElementById(OVERLAY_ID)
+    if (overlay) {
+      overlay.setAttribute('data-lang', lang || 'en')
     }
   }
 })
