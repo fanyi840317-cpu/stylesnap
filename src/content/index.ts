@@ -179,34 +179,12 @@ function onClick(e: MouseEvent) {
 
   // 此时 el 是网页中有效的一个元素
   if (lockedElement) {
-    if (lockedElement === el) {
-      // 再次点击同一个已锁定的元素，取消锁定
-      unlockElement()
-      chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
-      // 手动触发一次 hover 以更新高亮和信息框
-      onMouseMove(e)
-    } else {
-      // 点击了另一个有效元素，无缝切换锁定目标
-      lockElement(el)
-      const parsedCSS = parseElement(el)
-      const componentHTML = extractComponentHTML(el, 3)
-      const componentCSS = extractComponentCSS(el, 3)
-
-      showOverlay(el, parsedCSS)
-
-      chrome.runtime.sendMessage({
-        type: 'ELEMENT_CLICKED',
-        payload: {
-          parsedCSS,
-          tagName: el.tagName.toLowerCase(),
-          id: el.id,
-          classList: Array.from(el.classList).filter(c => !c.startsWith('stylesnap-')),
-          rect: { width: Math.round(el.getBoundingClientRect().width), height: Math.round(el.getBoundingClientRect().height), top: Math.round(el.getBoundingClientRect().top), left: Math.round(el.getBoundingClientRect().left) },
-          componentHTML,
-          componentCSS,
-        },
-      }).catch(() => {})
-    }
+    // 无论点击的是已锁定的元素本身，还是其他有效元素，
+    // 都认为用户的意图是“取消当前的锁定状态”
+    unlockElement()
+    chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
+    // 手动触发一次 hover 以更新高亮和信息框
+    onMouseMove(e)
     return
   }
 
