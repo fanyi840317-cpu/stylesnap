@@ -76,4 +76,13 @@
   outline: 2px solid rgba(99, 102, 241, 0.9) !important;
   outline-offset: 1px !important;
   background-color: rgba(99, 102, 241, 0.04) !important;
+  cursor: crosshair !important;
+}
+
+/* Locked element highlight */
+.stylesnap-locked {
+  outline: 2px solid rgba(16, 185, 129, 0.9) !important; /* emerald-500 */
+  outline-offset: 1px !important;
+  background-color: rgba(16, 185, 129, 0.04) !important;
+  cursor: crosshair !important;
 }

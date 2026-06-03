@@ -57,8 +57,12 @@ function AppContent() {
           setClickedEl(msg.payload as ClickedPayload)
           setActiveTab('inspect')
           break
+        case 'ELEMENT_UNLOCKED':
+          setClickedEl(null)
+          break
         case 'DISABLE_INSPECTOR':
           setIsInspecting(false)
+          setClickedEl(null)
           break
         case 'INIT_INSPECTOR':
           setIsInspecting(true)

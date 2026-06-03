@@ -12,8 +12,10 @@ import type { ParsedCSS } from '@/shared/types'
 
 let isActive = false
 let lastHighlighted: Element | null = null
+let lockedElement: Element | null = null
 const OVERLAY_ID = 'stylesnap-overlay'
 const HIGHLIGHT_CLASS = 'stylesnap-highlight'
+const LOCKED_CLASS = 'stylesnap-locked'
 
 // ─── Overlay UI ───────────────────────────────────────────────────────
 
@@ -78,22 +80,40 @@ function hideOverlay() {
 }
 
 function highlightElement(el: Element) {
+  if (lockedElement && el !== lockedElement) return
   removeHighlight()
   el.classList.add(HIGHLIGHT_CLASS)
   lastHighlighted = el
 }
 
 function removeHighlight() {
-  if (lastHighlighted) {
+  if (lastHighlighted && lastHighlighted !== lockedElement) {
     lastHighlighted.classList.remove(HIGHLIGHT_CLASS)
     lastHighlighted = null
+  }
+}
+
+function lockElement(el: Element) {
+  if (lockedElement) {
+    lockedElement.classList.remove(LOCKED_CLASS)
+  }
+  lockedElement = el
+  el.classList.add(LOCKED_CLASS)
+  el.classList.remove(HIGHLIGHT_CLASS)
+  lastHighlighted = null
+}
+
+function unlockElement() {
+  if (lockedElement) {
+    lockedElement.classList.remove(LOCKED_CLASS)
+    lockedElement = null
   }
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────
 
 function onMouseMove(e: MouseEvent) {
-  if (!isActive) return
+  if (!isActive || lockedElement) return
   const el = document.elementFromPoint(e.clientX, e.clientY)
   if (!el || el.closest('[data-stylesnap]')) return
   if (el === lastHighlighted) return
@@ -122,9 +142,23 @@ function onClick(e: MouseEvent) {
   e.preventDefault()
   e.stopPropagation()
 
+  if (lockedElement === el) {
+    // 再次点击取消锁定
+    unlockElement()
+    chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
+    // 手动触发一次 hover 以更新高亮和信息框
+    onMouseMove(e)
+    return
+  }
+
+  // 锁定该元素
+  lockElement(el)
+
   const parsedCSS = parseElement(el)
   const componentHTML = extractComponentHTML(el, 3)
   const componentCSS = extractComponentCSS(el, 3)
+
+  showOverlay(el, parsedCSS)
 
   chrome.runtime.sendMessage({
     type: 'ELEMENT_CLICKED',
@@ -142,8 +176,19 @@ function onClick(e: MouseEvent) {
 
 function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape' && isActive) {
-    disableInspector()
-    chrome.runtime.sendMessage({ type: 'DISABLE_INSPECTOR' }).catch(() => {})
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (lockedElement) {
+      // 第一次按 ESC 解除锁定
+      unlockElement()
+      chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
+      hideOverlay()
+    } else {
+      // 第二次按 ESC 退出审查模式
+      disableInspector()
+      chrome.runtime.sendMessage({ type: 'DISABLE_INSPECTOR' }).catch(() => {})
+    }
   }
 }
 
@@ -181,6 +226,7 @@ function disableInspector() {
   document.removeEventListener('mousemove', onMouseMove, true)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
+  unlockElement()
   removeHighlight()
   hideOverlay()
 
