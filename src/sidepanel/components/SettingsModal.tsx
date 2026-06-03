@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Key, Moon, Sun, Monitor, Trash2, Check, AlertCircle } from 'lucide-react'
 import { getSettings, saveSettings, getLicenseStatus, activateLicense } from '../../lib/license'
 import type { UserSettings, LicenseStatus } from '../../shared/types'
+import { useI18n } from '@/lib/i18n'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -9,13 +10,14 @@ interface SettingsModalProps {
 
 type ThemeOption = 'light' | 'dark' | 'system'
 
-const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ReactNode }[] = [
-  { value: 'light',  label: 'Light',  icon: <Sun size={14} /> },
-  { value: 'dark',   label: 'Dark',   icon: <Moon size={14} /> },
-  { value: 'system', label: 'System', icon: <Monitor size={14} /> },
-]
-
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
+  const { t } = useI18n()
+
+  const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ReactNode }[] = [
+    { value: 'light',  label: t('light'),  icon: <Sun size={14} /> },
+    { value: 'dark',   label: t('dark'),   icon: <Moon size={14} /> },
+    { value: 'system', label: t('system'), icon: <Monitor size={14} /> },
+  ]
   const [settings, setSettings]     = useState<UserSettings | null>(null)
   const [license, setLicense]       = useState<LicenseStatus | null>(null)
   const [licenseKey, setLicenseKey] = useState('')
@@ -59,8 +61,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     setActivateResult(null)
     const ok = await activateLicense(key)
     setActivateResult(ok
-      ? { ok: true,  msg: 'License activated! Enjoy StyleSnap Pro.' }
-      : { ok: false, msg: 'Invalid or already-used license key. Please check and try again.' })
+      ? { ok: true,  msg: t('activateSuccess') }
+      : { ok: false, msg: t('activateFail') })
     if (ok) {
       const l = await getLicenseStatus()
       setLicense(l)
@@ -93,7 +95,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-100">Settings</h2>
+          <h2 className="text-sm font-semibold text-gray-100">{t('settings')}</h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
@@ -107,20 +109,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           {/* ── License ── */}
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              License
+              {t('license')}
             </h3>
             {license.isPro ? (
               <div className="flex items-center justify-between bg-green-900/20 border border-green-700/40 rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2">
                   <Check size={14} className="text-green-400" />
-                  <span className="text-xs text-green-300 font-medium">StyleSnap Pro — Activated</span>
+                  <span className="text-xs text-green-300 font-medium">{t('proActivated')}</span>
                 </div>
                 <button
                   onClick={handleDeactivate}
                   className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
                 >
                   <Trash2 size={12} />
-                  Remove
+                  {t('remove')}
                 </button>
               </div>
             ) : (
@@ -138,7 +140,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                     disabled={activating || !licenseKey.trim()}
                     className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs rounded-lg transition-colors font-medium"
                   >
-                    {activating ? '…' : 'Activate'}
+                    {activating ? t('activating') : t('activate')}
                   </button>
                 </div>
                 {activateResult && (
@@ -158,7 +160,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           {/* ── Theme ── */}
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Theme
+              {t('theme')}
             </h3>
             <div className="flex gap-2">
               {THEME_OPTIONS.map(opt => (
@@ -181,11 +183,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           {/* ── AI Code Generation ── */}
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              AI Code Generation
+              {t('aiCode')}
               <span className="ml-2 text-[10px] font-normal text-indigo-400 normal-case bg-indigo-900/30 px-1.5 py-0.5 rounded">Pro</span>
             </h3>
             <p className="text-xs text-gray-500 mb-2">
-              Provide your own OpenAI-compatible API key to enable AI fallback for complex CSS → code conversions.
+              {t('aiCodeDesc')}
             </p>
             <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
               <Key size={13} className="text-gray-500 flex-none" />
@@ -202,21 +204,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           {/* ── Behavior toggles ── */}
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Behavior
+              {t('behavior')}
             </h3>
             <div className="space-y-1">
               <Toggle
-                label="Show overlay highlight on hover"
+                label={t('showOverlay')}
                 value={settings.showOverlay}
                 onChange={() => handleToggle('showOverlay')}
               />
               <Toggle
-                label="Auto-inspect on extension open"
+                label={t('autoInspect')}
                 value={settings.autoInspect}
                 onChange={() => handleToggle('autoInspect')}
               />
               <Toggle
-                label="Copy feedback sound"
+                label={t('copySound')}
                 value={settings.copySound}
                 onChange={() => handleToggle('copySound')}
               />
@@ -226,16 +228,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           {/* ── Usage ── */}
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Today's Usage
+              {t('usage')}
             </h3>
             <div className="bg-gray-800 rounded-lg px-3 py-2">
               {license.isPro ? (
-                <span className="text-xs text-green-400">Unlimited (Pro)</span>
+                <span className="text-xs text-green-400">{t('unlimited')}</span>
               ) : (
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-gray-400">
-                    <span>Free tier</span>
-                    <span>{license.dailyUsed} / {license.dailyLimit} extractions</span>
+                    <span>{t('freeTier')}</span>
+                    <span>{license.dailyUsed} / {license.dailyLimit} {t('extractions')}</span>
                   </div>
                   <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                     <div
@@ -255,13 +257,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             onClick={onClose}
             className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={handleSave}
             className="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
-            {saved ? <><Check size={14} /> Saved</> : 'Save Settings'}
+            {saved ? <><Check size={14} /> {t('saved')}</> : t('saveSettings')}
           </button>
         </div>
       </div>
