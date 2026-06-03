@@ -159,8 +159,16 @@ function onClick(e: MouseEvent) {
     return
   }
 
-  // 点击了网页中的空白处或者扩展自身的UI（悬浮按钮）
-  if (!el || el.closest('[data-stylesnap]')) {
+  // 如果点击了扩展的 UI（例如右下角的悬浮按钮），直接忽略
+  if (el && el.closest('[data-stylesnap]')) {
+    return
+  }
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  // 如果点到了非元素区域 (比如 document 空白)，或者点到了 `<html>`/`<body>`，视为空白处解锁
+  if (!el || el === document.documentElement || el === document.body) {
     if (lockedElement) {
       unlockElement()
       chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
@@ -169,19 +177,40 @@ function onClick(e: MouseEvent) {
     return
   }
 
-  e.preventDefault()
-  e.stopPropagation()
+  // 此时 el 是网页中有效的一个元素
+  if (lockedElement) {
+    if (lockedElement === el) {
+      // 再次点击同一个已锁定的元素，取消锁定
+      unlockElement()
+      chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
+      // 手动触发一次 hover 以更新高亮和信息框
+      onMouseMove(e)
+    } else {
+      // 点击了另一个有效元素，无缝切换锁定目标
+      lockElement(el)
+      const parsedCSS = parseElement(el)
+      const componentHTML = extractComponentHTML(el, 3)
+      const componentCSS = extractComponentCSS(el, 3)
 
-  if (lockedElement === el) {
-    // 再次点击已锁定的元素，取消锁定
-    unlockElement()
-    chrome.runtime.sendMessage({ type: 'ELEMENT_UNLOCKED' }).catch(() => {})
-    // 手动触发一次 hover 以更新高亮和信息框
-    onMouseMove(e)
+      showOverlay(el, parsedCSS)
+
+      chrome.runtime.sendMessage({
+        type: 'ELEMENT_CLICKED',
+        payload: {
+          parsedCSS,
+          tagName: el.tagName.toLowerCase(),
+          id: el.id,
+          classList: Array.from(el.classList).filter(c => !c.startsWith('stylesnap-')),
+          rect: { width: Math.round(el.getBoundingClientRect().width), height: Math.round(el.getBoundingClientRect().height), top: Math.round(el.getBoundingClientRect().top), left: Math.round(el.getBoundingClientRect().left) },
+          componentHTML,
+          componentCSS,
+        },
+      }).catch(() => {})
+    }
     return
   }
 
-  // 锁定该元素
+  // 当前没有锁定任何元素，正常执行锁定
   lockElement(el)
 
   const parsedCSS = parseElement(el)
