@@ -1,22 +1,25 @@
 import React from 'react'
 import { X, Zap, Check, Star, ArrowRight, ExternalLink } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface UpgradeModalProps {
   onClose: () => void
 }
 
-const PRO_FEATURES = [
-  { icon: '⚡', title: 'Unlimited extractions',   desc: 'No daily limits, extract as many elements as you want' },
-  { icon: '🎨', title: 'Tailwind class export',    desc: 'One-click CSS → Tailwind conversion with 300+ mapping rules' },
-  { icon: '⚛️',  title: 'React / Vue code gen',    desc: 'Generate ready-to-paste React components or Vue SFCs' },
-  { icon: '🪙',  title: 'Design token export',     desc: 'Extract your entire color palette, typography & spacing system' },
-  { icon: '📸',  title: 'Annotated screenshots',   desc: 'Screenshot any page with auto-measured dimension & style labels' },
-  { icon: '✏️',  title: 'Live CSS editing',         desc: 'Edit any element style in real-time directly from the side panel' },
-  { icon: '🤖',  title: 'AI code fallback',         desc: 'AI-powered conversion for complex patterns that rules can\'t handle' },
-  { icon: '🔄',  title: 'Lifetime updates',         desc: 'All future features included — pay once, own forever' },
-]
-
 export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
+  const { t } = useI18n()
+
+  const PRO_FEATURES = [
+    { icon: '⚡', title: t('featUnlimited'),   desc: t('featUnlimitedDesc') },
+    { icon: '🎨', title: t('featTailwind'),    desc: t('featTailwindDesc') },
+    { icon: '⚛️',  title: t('featReactVue'),    desc: t('featReactVueDesc') },
+    { icon: '🪙',  title: t('featTokens'),      desc: t('featTokensDesc') },
+    { icon: '📸',  title: t('featScreenshot'),  desc: t('featScreenshotDesc') },
+    { icon: '✏️',  title: t('featLiveCSS'),     desc: t('featLiveCSSDesc') },
+    { icon: '🤖',  title: t('featAIFallback'),  desc: t('featAIFallbackDesc') },
+    { icon: '🔄',  title: t('featUpdates'),     desc: t('featUpdatesDesc') },
+  ]
+
   const handleUpgrade = () => {
     // Opens Creem.io payment link in a new tab
     chrome.tabs.create({ url: 'https://www.creem.io/payment/stylesnap-pro' })
@@ -52,15 +55,15 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
 
           {/* Price */}
           <h2 className="text-xl font-bold text-white mb-1">
-            StyleSnap Pro
+            {t('upgradeModalTitle')}
           </h2>
           <div className="flex items-end gap-2 mb-1">
             <span className="text-3xl font-extrabold text-white">$29</span>
             <span className="text-gray-400 text-sm mb-1 line-through">$69</span>
-            <span className="text-green-400 text-sm mb-1 font-medium">Save $40</span>
+            <span className="text-green-400 text-sm mb-1 font-medium">{t('save')} $40</span>
           </div>
           <p className="text-xs text-gray-400">
-            One-time payment · Lifetime access · No subscription
+            {t('oneTime')}
           </p>
         </div>
 
@@ -83,7 +86,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
 
         {/* Trust badges */}
         <div className="flex items-center justify-center gap-4 px-4 py-2">
-          {['🔒 Secure checkout', '📧 Instant delivery', '♾️ Lifetime deal'].map(badge => (
+          {[t('secure'), t('instant'), t('lifetime')].map(badge => (
             <span key={badge} className="text-[10px] text-gray-500">{badge}</span>
           ))}
         </div>
@@ -95,7 +98,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
             className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-900/40 active:scale-[0.98]"
           >
             <Zap size={15} />
-            Upgrade to Pro — $29
+            {t('upgradeToPro')}
             <ArrowRight size={15} />
           </button>
 
@@ -107,7 +110,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
             className="w-full py-2 text-gray-500 hover:text-gray-300 text-xs flex items-center justify-center gap-1 transition-colors"
           >
             <ExternalLink size={11} />
-            Learn more at stylesnap.dev
+            {t('learnMore')}
           </button>
         </div>
       </div>
