@@ -101,12 +101,22 @@ function lockElement(el: Element) {
   el.classList.add(LOCKED_CLASS)
   el.classList.remove(HIGHLIGHT_CLASS)
   lastHighlighted = null
+
+  const overlay = document.getElementById(OVERLAY_ID)
+  if (overlay) {
+    overlay.classList.add('ss-interactive')
+  }
 }
 
 function unlockElement() {
   if (lockedElement) {
     lockedElement.classList.remove(LOCKED_CLASS)
     lockedElement = null
+  }
+  
+  const overlay = document.getElementById(OVERLAY_ID)
+  if (overlay) {
+    overlay.classList.remove('ss-interactive')
   }
 }
 
@@ -137,6 +147,12 @@ function onMouseMove(e: MouseEvent) {
 function onClick(e: MouseEvent) {
   if (!isActive) return
   const el = document.elementFromPoint(e.clientX, e.clientY)
+  
+  // 如果点击的是 overlay 内部，不要触发解锁或新元素的锁定
+  if (el && el.closest('#' + OVERLAY_ID)) {
+    return
+  }
+  
   if (!el || el.closest('[data-stylesnap]')) return
 
   e.preventDefault()
