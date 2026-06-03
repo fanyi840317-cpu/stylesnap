@@ -60,24 +60,36 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
   `
 
   // Position overlay
+  // 先将 display 设为 block 以便获取悬浮框的真实尺寸
+  overlay.style.display = 'block'
+  const overlayRect = overlay.getBoundingClientRect()
+  const overlayWidth = overlayRect.width || 320
+  const overlayHeight = overlayRect.height || 150
+
   const scrollY = window.scrollY
   const scrollX = window.scrollX
+
+  // 默认放在元素下方
   let top = rect.bottom + scrollY + 4
   let left = rect.left + scrollX
+  overlay.style.transform = 'none' // 重置 transform
 
-  if (rect.bottom + 150 > window.innerHeight) {
-    top = rect.top + scrollY - 4
-    overlay.style.transform = 'translateY(-100%)'
-  } else {
-    overlay.style.transform = 'translateY(0)'
+  // 如果下方空间不够，放在元素上方
+  if (rect.bottom + overlayHeight + 10 > window.innerHeight) {
+    top = rect.top + scrollY - overlayHeight - 4
+    
+    // 如果上方空间也不够，就固定在视口底部
+    if (top < scrollY) {
+      top = scrollY + window.innerHeight - overlayHeight - 10
+    }
   }
 
-  const maxLeft = window.innerWidth - 320 + scrollX
-  left = Math.max(8, Math.min(left, maxLeft))
+  // 处理水平方向边界
+  const maxLeft = window.innerWidth - overlayWidth + scrollX - 10
+  left = Math.max(scrollX + 10, Math.min(left, maxLeft))
 
   overlay.style.top = `${top}px`
   overlay.style.left = `${left}px`
-  overlay.style.display = 'block'
 }
 
 function hideOverlay() {
