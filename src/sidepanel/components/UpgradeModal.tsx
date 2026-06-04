@@ -1,31 +1,34 @@
 import React, { useState } from 'react'
-import { X, Zap, Check, Star, ArrowRight, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
+import { X, Zap, Check, Star, ArrowRight, ExternalLink, Loader2, AlertCircle, Key } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
 interface UpgradeModalProps {
   onClose: () => void
+  onActivated?: () => void
 }
 
-export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
+export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose, onActivated }) => {
   const { t } = useI18n()
   const [email, setEmail] = useState('')
+  const [licenseKey, setLicenseKey] = useState('')
   const [checkingOut, setCheckingOut] = useState(false)
+  const [activating, setActivating] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
-  const [step, setStep] = useState<'price' | 'checkout'>('price')
+  const [activateError, setActivateError] = useState('')
+  const [step, setStep] = useState<'price' | 'checkout' | 'activate'>('price')
 
   const PRO_FEATURES = [
     { icon: '⚡', title: t('featUnlimited'),   desc: t('featUnlimitedDesc') },
     { icon: '🎨', title: t('featTailwind'),    desc: t('featTailwindDesc') },
     { icon: '⚛️',  title: t('featReactVue'),    desc: t('featReactVueDesc') },
     { icon: '🪙',  title: t('featTokens'),      desc: t('featTokensDesc') },
-    { icon: '📸',  title: t('featScreenshot'),  desc: t('featScreenshotDesc') },
+    { icon: '📸', title: t('featScreenshot'),  desc: t('featScreenshotDesc') },
     { icon: '✏️',  title: t('featLiveCSS'),     desc: t('featLiveCSSDesc') },
-    { icon: '🤖',  title: t('featAIFallback'),  desc: t('featAIFallbackDesc') },
-    { icon: '🔄',  title: t('featUpdates'),     desc: t('featUpdatesDesc') },
+    { icon: '🤖', title: t('featAIFallback'),  desc: t('featAIFallbackDesc') },
+    { icon: '🔄', title: t('featUpdates'),     desc: t('featUpdatesDesc') },
   ]
 
   const handleUpgrade = () => {
-    // We open Dodo Payments via our proxy endpoint or direct link if configured
     setStep('checkout')
   }
 
@@ -36,10 +39,35 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
       const { createCheckout } = await import('@/lib/license')
       const url = await createCheckout(email.trim() || undefined)
       chrome.tabs.create({ url })
-      onClose()
+      // Switch to activation step so user can enter key after payment
+      setStep('activate')
     } catch {
       setCheckoutError(t('checkoutError') || 'Failed to create checkout. Please try again.')
+    } finally {
       setCheckingOut(false)
+    }
+  }
+
+  const handleActivate = async () => {
+    setActivating(true)
+    setActivateError('')
+    try {
+      const { activateLicenseKey } = await import('@/lib/license')
+      const result = await activateLicenseKey(licenseKey.trim())
+      if (result.success) {
+        onActivated?.()
+        onClose()
+      } else {
+        if (result.limitReached) {
+          setActivateError(t('activationLimitReached') || 'Activation limit reached (2 devices max). Deactivate another device first.')
+        } else {
+          setActivateError(result.error || t('activateFail') || 'Activation failed. Check your license key.')
+        }
+      }
+    } catch {
+      setActivateError(t('activateFail') || 'Activation failed. Please try again.')
+    } finally {
+      setActivating(false)
     }
   }
 
@@ -122,6 +150,14 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
               </button>
 
               <button
+                onClick={() => setStep('activate')}
+                className="w-full py-2 text-gray-400 hover:text-gray-200 text-xs flex items-center justify-center gap-1 transition-colors"
+              >
+                <Key size={11} />
+                {t('alreadyHaveKey') || 'Already have a license key?'}
+              </button>
+
+              <button
                 onClick={() => {
                   chrome.tabs.create({ url: 'https://stylesnap.dev' })
                   onClose()
@@ -133,7 +169,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
               </button>
             </div>
           </>
-        ) : (
+        ) : step === 'checkout' ? (
           <div className="px-4 py-6">
             <h3 className="text-sm font-semibold text-white mb-2">{t('enterEmailTitle')}</h3>
             <p className="text-xs text-gray-400 mb-4">{t('enterEmailDesc')}</p>
@@ -179,6 +215,60 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
               <span className="text-[10px] text-gray-500 flex items-center gap-1">
                 {t('secureDodo')}
               </span>
+            </div>
+          </div>
+        ) : (
+          /* Activate step — enter license key */
+          <div className="px-4 py-6">
+            <h3 className="text-sm font-semibold text-white mb-2">{t('enterLicenseKeyTitle') || 'Enter License Key'}</h3>
+            <p className="text-xs text-gray-400 mb-4">
+              {t('enterLicenseKeyDesc') || 'Paste the license key you received after purchase (format: PRO-XXXX-XXXX-XXXX).'}
+            </p>
+            
+            <input
+              type="text"
+              value={licenseKey}
+              onChange={e => setLicenseKey(e.target.value.toUpperCase())}
+              placeholder="PRO-XXXX-XXXX-XXXX"
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 mb-4 font-mono tracking-wider"
+              autoFocus
+              onKeyDown={e => {
+                if (e.key === 'Enter' && licenseKey.trim() && !activating) {
+                  handleActivate()
+                }
+              }}
+            />
+            
+            {activateError && (
+              <div className="flex items-start gap-2 text-xs bg-red-900/20 text-red-300 border border-red-700/30 rounded-lg px-3 py-2 mb-4">
+                <AlertCircle size={14} className="mt-0.5 flex-none" />
+                {activateError}
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStep('price')}
+                className="flex-1 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
+                disabled={activating}
+              >
+                {t('back')}
+              </button>
+              <button
+                onClick={handleActivate}
+                disabled={activating || !licenseKey.trim()}
+                className="flex-[2] py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 text-white font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-900/40"
+              >
+                {activating ? <Loader2 size={16} className="animate-spin" /> : <><Key size={14} /> {t('activateLicense') || 'Activate'}</>}
+              </button>
+            </div>
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => setStep('checkout')}
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                {t('needToPurchase') || "Don't have a key? Purchase now →"}
+              </button>
             </div>
           </div>
         )}

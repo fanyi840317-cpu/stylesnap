@@ -96,11 +96,14 @@ export interface Message<T = unknown> {
 // ── License ───────────────────────────────────────────────────────────────────
 
 export interface LicenseStatus {
-  isPro:       boolean
-  dailyUsed:   number
-  dailyLimit:  number
-  email?:      string
-  licenseKey?: string
+  isPro:           boolean
+  dailyUsed:       number
+  dailyLimit:      number
+  email?:          string
+  licenseKey?:     string
+  instanceId?:     string   // DodoPayments activation instance ID
+  activationsUsed?: number
+  activationsLimit?: number
 }
 
 // ── User Settings ─────────────────────────────────────────────────────────────

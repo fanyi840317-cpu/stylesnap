@@ -2,12 +2,26 @@
  * License Manager — StyleSnap
  * Free: 20 extractions/day   |   Pro: unlimited ($29 one-time)
  *
- * Uses Dodo Payments via secure proxy API for checkout and verification.
+ * Uses DodoPayments License Key system via secure proxy API.
+ * Flow: checkout → payment → license key returned → activate on device → validate periodically
  * Proxy: https://stylesnap-proxy.vercel.app
  */
 import type { LicenseStatus, UserSettings } from '@/shared/types'
 import { DEFAULT_SETTINGS } from '@/shared/types'
 import { STORAGE_KEYS, DAILY_FREE_LIMIT, PROXY_BASE_URL } from '@/shared/constants'
+
+// ─── Device fingerprint ─────────────────────────────────────────────────────
+
+/** Generate a stable device name from browser info */
+function getDeviceName(): string {
+  const ua = navigator.userAgent
+  const platform = navigator.platform || 'Unknown'
+  // Extract OS
+  if (ua.includes('Windows')) return `Windows-${platform}`
+  if (ua.includes('Mac OS')) return `macOS-${platform}`
+  if (ua.includes('Linux')) return `Linux-${platform}`
+  return `Device-${platform.slice(0, 20)}`
+}
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 
@@ -25,11 +39,14 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
 
   if (stored?.isPro) {
     return {
-      isPro:      true,
+      isPro:           true,
       dailyUsed,
-      dailyLimit: Infinity,
-      email:      stored.email,
-      licenseKey: stored.licenseKey,
+      dailyLimit:      Infinity,
+      email:           stored.email,
+      licenseKey:      stored.licenseKey,
+      instanceId:      stored.instanceId,
+      activationsUsed: stored.activationsUsed,
+      activationsLimit: stored.activationsLimit,
     }
   }
 
@@ -51,10 +68,11 @@ export async function recordUsage(): Promise<boolean> {
   return true
 }
 
-// ─── Checkout (Dodo Payments via Proxy) ───────────────────────────────────────
+// ─── Checkout (DodoPayments via Proxy) ───────────────────────────────────────
 
 /**
- * Creates a Dodo Payments checkout session via our secure proxy.
+ * Creates a DodoPayments checkout session via our secure proxy.
+ * After payment, the return_url will include ?license_key=PRO-XXXX&email=...
  * Returns the hosted checkout URL for the user to complete payment.
  */
 export async function createCheckout(email?: string): Promise<string> {
@@ -76,11 +94,138 @@ export async function createCheckout(email?: string): Promise<string> {
   return data.checkout_url
 }
 
-// ─── Activation (Dodo Payments via Proxy) ─────────────────────────────────────
+// ─── License Key Activation (DodoPayments via Proxy) ─────────────────────────
 
 /**
- * Verifies a purchase by calling our secure proxy endpoint.
- * The proxy uses the Dodo Payments API key server-side to check payment status.
+ * Activates a License Key on this device.
+ * Creates an activation instance via DodoPayments /licenses/activate.
+ * Returns true if activation succeeded.
+ */
+export async function activateLicenseKey(licenseKey: string): Promise<{
+  success: boolean
+  error?: string
+  limitReached?: boolean
+}> {
+  const key = licenseKey.trim()
+  if (!key) return { success: false, error: 'License key is required.' }
+
+  try {
+    const deviceName = getDeviceName()
+    const res = await fetch(`${PROXY_BASE_URL}/api/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: key,
+        device_name: deviceName,
+      }),
+    })
+    const data = await res.json()
+
+    if (!data.activated) {
+      return {
+        success: false,
+        error: data.error || 'Activation failed.',
+        limitReached: data.limit_reached === true,
+      }
+    }
+
+    // Store license with activation info
+    const payload: Partial<LicenseStatus> = {
+      isPro:            true,
+      dailyUsed:        0,
+      dailyLimit:       Infinity,
+      licenseKey:       key,
+      instanceId:       data.instance_id,
+      activationsUsed:  data.activations_used,
+      activationsLimit: data.activations_limit,
+    }
+    await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
+    return { success: true }
+
+  } catch (err) {
+    return { success: false, error: 'Activation service unavailable.' }
+  }
+}
+
+/**
+ * Validates a License Key via DodoPayments /licenses/validate.
+ * Used for periodic checks (e.g., every 24h or on startup).
+ */
+export async function validateLicense(licenseKey: string): Promise<{
+  valid: boolean
+  activationsUsed?: number
+  activationsLimit?: number
+  expiresAt?: string | null
+}> {
+  try {
+    const res = await fetch(`${PROXY_BASE_URL}/api/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ license_key: licenseKey.trim() }),
+    })
+    const data = await res.json()
+
+    if (data.valid) {
+      // Update stored activation info
+      const current = await getLicenseStatus()
+      const payload: Partial<LicenseStatus> = {
+        ...current,
+        activationsUsed:  data.activations_used,
+        activationsLimit: data.activations_limit,
+      }
+      await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
+    }
+
+    return {
+      valid: data.valid === true,
+      activationsUsed: data.activations_used,
+      activationsLimit: data.activations_limit,
+      expiresAt: data.expires_at,
+    }
+  } catch {
+    // Network error — trust local cache, don't revoke
+    return { valid: true }
+  }
+}
+
+/**
+ * Deactivates this device's license instance (releases the activation slot).
+ * Call before uninstalling or when user wants to transfer to another device.
+ */
+export async function deactivateLicenseInstance(): Promise<boolean> {
+  const status = await getLicenseStatus()
+  if (!status.isPro || !status.licenseKey || !status.instanceId) {
+    // No active instance, just clear local
+    await chrome.storage.local.remove(STORAGE_KEYS.LICENSE)
+    return true
+  }
+
+  try {
+    const res = await fetch(`${PROXY_BASE_URL}/api/deactivate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: status.licenseKey,
+        instance_id: status.instanceId,
+      }),
+    })
+    const data = await res.json()
+
+    // Clear local regardless of remote success
+    await chrome.storage.local.remove(STORAGE_KEYS.LICENSE)
+    return data.deactivated === true
+  } catch {
+    // Network error — still clear local (user can re-activate later)
+    await chrome.storage.local.remove(STORAGE_KEYS.LICENSE)
+    return false
+  }
+}
+
+// ─── Legacy compat (email-based activation) ──────────────────────────────────
+
+/**
+ * @deprecated Use activateLicenseKey() instead.
+ * Legacy email-based activation — kept for backward compatibility.
  */
 export async function activateLicense(email: string): Promise<boolean> {
   const normalized = email.trim().toLowerCase()
@@ -97,13 +242,12 @@ export async function activateLicense(email: string): Promise<boolean> {
 
     if (!data.valid) return false
 
-    // Store license with verified email
     const payload: Partial<LicenseStatus> = {
       isPro:      true,
       dailyUsed:  0,
       dailyLimit: Infinity,
       email:      normalized,
-      licenseKey: data.payment_id || data.license_key || `dodo_${Date.now()}`,
+      licenseKey: data.license_key || data.payment_id || `dodo_${Date.now()}`,
     }
     await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
     return true
@@ -113,7 +257,73 @@ export async function activateLicense(email: string): Promise<boolean> {
 }
 
 export async function deactivateLicense(): Promise<void> {
-  await chrome.storage.local.remove(STORAGE_KEYS.LICENSE)
+  await deactivateLicenseInstance()
+}
+
+// ─── Periodic Validation ─────────────────────────────────────────────────────
+
+/** How often to re-validate the license (ms). Default: 24 hours */
+const VALIDATION_INTERVAL = 24 * 60 * 60 * 1000
+const LAST_VALIDATION_KEY = 'stylesnap_last_validation'
+
+/**
+ * Checks if it's time to re-validate the license.
+ * Call this on extension startup or sidepanel open.
+ * If the license is invalid, revokes Pro status.
+ */
+export async function checkAndValidateLicense(): Promise<boolean> {
+  const status = await getLicenseStatus()
+  if (!status.isPro || !status.licenseKey) return false
+
+  const data = await chrome.storage.local.get(LAST_VALIDATION_KEY)
+  const lastValidation = data[LAST_VALIDATION_KEY] as number | undefined
+  const now = Date.now()
+
+  // Skip if validated recently
+  if (lastValidation && (now - lastValidation) < VALIDATION_INTERVAL) {
+    return true
+  }
+
+  const result = await validateLicense(status.licenseKey)
+
+  if (!result.valid) {
+    // License revoked — clear Pro status
+    await chrome.storage.local.remove(STORAGE_KEYS.LICENSE)
+    return false
+  }
+
+  // Mark validation time
+  await chrome.storage.local.set({ [LAST_VALIDATION_KEY]: now })
+  return true
+}
+
+// ─── URL Parameter Detection ─────────────────────────────────────────────────
+
+/**
+ * Check if the current URL contains a license_key parameter
+ * (DodoPayments returns this in the return_url after payment).
+ * If found, auto-activate the license.
+ */
+export async function checkUrlForLicenseKey(): Promise<boolean> {
+  try {
+    const url = new URL(window.location.href)
+    const licenseKey = url.searchParams.get('license_key')
+    if (!licenseKey) return false
+
+    const result = await activateLicenseKey(licenseKey)
+    if (result.success) {
+      // Clean up URL params
+      url.searchParams.delete('license_key')
+      url.searchParams.delete('payment_id')
+      url.searchParams.delete('status')
+      url.searchParams.delete('email')
+      window.history.replaceState({}, '', url.toString())
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────

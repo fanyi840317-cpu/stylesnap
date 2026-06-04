@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X, Key, Moon, Sun, Monitor, Trash2, Check, AlertCircle } from 'lucide-react'
-import { getSettings, saveSettings, getLicenseStatus, activateLicense } from '../../lib/license'
+import { X, Key, Moon, Sun, Monitor, Trash2, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { getSettings, saveSettings, getLicenseStatus, activateLicenseKey, deactivateLicenseInstance } from '../../lib/license'
 import type { UserSettings, LicenseStatus } from '../../shared/types'
 import { useI18n } from '@/lib/i18n'
 
@@ -20,8 +20,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   ]
   const [settings, setSettings]     = useState<UserSettings | null>(null)
   const [license, setLicense]       = useState<LicenseStatus | null>(null)
-  const [email, setEmail]           = useState('')
+  const [licenseKeyInput, setLicenseKeyInput] = useState('')
   const [activating, setActivating] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
   const [activateResult, setActivateResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [saved, setSaved]           = useState(false)
 
@@ -54,28 +55,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const handleActivate = async () => {
-    const e = email.trim()
-    if (!e) return
+  const handleActivateKey = async () => {
+    const key = licenseKeyInput.trim()
+    if (!key) return
     setActivating(true)
     setActivateResult(null)
-    const ok = await activateLicense(e)
-    setActivateResult(ok
-      ? { ok: true,  msg: t('activateSuccess') }
-      : { ok: false, msg: t('activateFail') })
-    if (ok) {
+    const result = await activateLicenseKey(key)
+    if (result.success) {
+      setActivateResult({ ok: true, msg: t('activateSuccess') || 'License activated!' })
       const l = await getLicenseStatus()
       setLicense(l)
+      setLicenseKeyInput('')
+    } else {
+      const msg = result.limitReached
+        ? (t('activationLimitReached') || 'Activation limit reached (2 devices max). Deactivate another device first.')
+        : (result.error || t('activateFail') || 'Activation failed.')
+      setActivateResult({ ok: false, msg })
     }
     setActivating(false)
   }
 
   const handleDeactivate = async () => {
-    await chrome.storage.local.remove('stylesnap_license')
+    setDeactivating(true)
+    await deactivateLicenseInstance()
     const l = await getLicenseStatus()
     setLicense(l)
-    setEmail('')
+    setLicenseKeyInput('')
     setActivateResult(null)
+    setDeactivating(false)
   }
 
   if (!settings || !license) {
@@ -112,35 +119,63 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               {t('license')}
             </h3>
             {license.isPro ? (
-              <div className="flex items-center justify-between bg-green-900/20 border border-green-700/40 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <Check size={14} className="text-green-400" />
-                  <span className="text-xs text-green-300 font-medium">{t('proActivated')}</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between bg-green-900/20 border border-green-700/40 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Check size={14} className="text-green-400" />
+                    <span className="text-xs text-green-300 font-medium">{t('proActivated')}</span>
+                  </div>
+                  <button
+                    onClick={handleDeactivate}
+                    disabled={deactivating}
+                    className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors disabled:opacity-50"
+                  >
+                    {deactivating ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                    {t('remove')}
+                  </button>
                 </div>
-                <button
-                  onClick={handleDeactivate}
-                  className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-                >
-                  <Trash2 size={12} />
-                  {t('remove')}
-                </button>
+                {/* Show license key (masked) and activation info */}
+                {license.licenseKey && (
+                  <div className="bg-gray-800 rounded-lg px-3 py-2 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">{t('licenseKeyLabel') || 'License Key'}</span>
+                      <span className="text-gray-300 font-mono">
+                        {license.licenseKey.substring(0, 8)}••••••••
+                      </span>
+                    </div>
+                    {license.activationsLimit && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">{t('devicesLabel') || 'Devices'}</span>
+                        <span className="text-gray-300">
+                          {license.activationsUsed || 1} / {license.activationsLimit}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40"
+                    type="text"
+                    value={licenseKeyInput}
+                    onChange={e => setLicenseKeyInput(e.target.value.toUpperCase())}
+                    placeholder="PRO-XXXX-XXXX-XXXX"
+                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 font-mono tracking-wider"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && licenseKeyInput.trim() && !activating) {
+                        handleActivateKey()
+                      }
+                    }}
                   />
                   <button
-                    onClick={handleActivate}
-                    disabled={activating || !email.trim()}
-                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs rounded-lg transition-colors font-medium"
+                    onClick={handleActivateKey}
+                    disabled={activating || !licenseKeyInput.trim()}
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs rounded-lg transition-colors font-medium flex items-center gap-1"
                   >
-                    {activating ? t('activating') : t('activate')}
+                    {activating ? <Loader2 size={12} className="animate-spin" /> : <Key size={12} />}
+                    {t('activate')}
                   </button>
                 </div>
                 {activateResult && (
