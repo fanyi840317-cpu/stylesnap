@@ -7,7 +7,10 @@
  */
 import type { LicenseStatus, UserSettings } from '@/shared/types'
 import { DEFAULT_SETTINGS } from '@/shared/types'
-import { STORAGE_KEYS, DAILY_FREE_LIMIT, PROXY_BASE_URL } from '@/shared/constants'
+import { STORAGE_KEYS, DAILY_FREE_LIMIT } from '@/shared/constants'
+
+const DODO_API_KEY = 'FpqFn-UIKyng7u87.BaFztBGHO8g5rjTbFdN5i31JIh_MaYEw9ELf3jSewqiSzkyj'
+const DODO_PRODUCT_ID = 'pdt_0Nd9xgoxK3W2IJCiietgg' // using the test product id from the account
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 
@@ -58,14 +61,22 @@ export async function recordUsage(): Promise<boolean> {
  * The user completes payment on the Dodo checkout page.
  */
 export async function createCheckout(email?: string): Promise<string> {
-  const res = await fetch(`${PROXY_BASE_URL}/api/checkout`, {
+  const res = await fetch(`https://test.dodopayments.com/checkouts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email || '' }),
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${DODO_API_KEY}`
+    },
+    body: JSON.stringify({ 
+      customer: { email: email || '' },
+      product_cart: [{ product_id: DODO_PRODUCT_ID, quantity: 1 }],
+      return_url: "https://stylesnap.dev/success"
+    }),
   })
 
   const data = await res.json()
   if (data.error) throw new Error(data.error)
+  if (!data.checkout_url) throw new Error('No checkout URL returned from Dodo Payments')
   return data.checkout_url
 }
 
@@ -81,14 +92,20 @@ export async function activateLicense(email: string): Promise<boolean> {
   if (!emailPattern.test(normalized)) return false
 
   try {
-    const res = await fetch(`${PROXY_BASE_URL}/api/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalized }),
+    const res = await fetch(`https://test.dodopayments.com/payments?limit=100`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${DODO_API_KEY}`
+      }
     })
 
     const data = await res.json()
-    if (!data.valid) return false
+    // Find a succeeded payment for this email
+    const validPayment = data.items?.find((p: any) => 
+      p.customer?.email?.toLowerCase() === normalized && p.status === 'succeeded'
+    )
+
+    if (!validPayment) return false
 
     // Store license with email
     const payload: Partial<LicenseStatus> = {
@@ -96,7 +113,7 @@ export async function activateLicense(email: string): Promise<boolean> {
       dailyUsed:  0,
       dailyLimit: Infinity,
       email:      normalized,
-      licenseKey: data.payment_id || data.license_key || '',
+      licenseKey: validPayment.payment_id || '',
     }
     await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
     return true
