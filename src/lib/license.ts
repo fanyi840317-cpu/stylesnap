@@ -2,8 +2,8 @@
  * License Manager — StyleSnap
  * Free: 20 extractions/day   |   Pro: unlimited ($29 one-time)
  *
- * Uses Dodo Payments for checkout and verification.
- * Proxy API: https://stylesnap-proxy.vercel.app
+ * Uses Dodo Payments via secure proxy API for checkout and verification.
+ * Proxy: https://stylesnap-proxy.vercel.app
  */
 import type { LicenseStatus, UserSettings } from '@/shared/types'
 import { DEFAULT_SETTINGS } from '@/shared/types'
@@ -51,33 +51,36 @@ export async function recordUsage(): Promise<boolean> {
   return true
 }
 
-// ─── Checkout (Dodo Payments) ────────────────────────────────────────────────
+// ─── Checkout (Dodo Payments via Proxy) ───────────────────────────────────────
 
 /**
- * Creates a Dodo Payments checkout session and returns the URL.
- * The user completes payment on the Dodo checkout page.
+ * Creates a Dodo Payments checkout session via our secure proxy.
+ * Returns the hosted checkout URL for the user to complete payment.
  */
 export async function createCheckout(email?: string): Promise<string> {
-  // Since we cannot securely store Dodo API keys in client-side code (Chrome Extension),
-  // we redirect the user to a secure hosted proxy endpoint or payment link.
-  // Using a static Dodo Payment Link here is the safest and easiest way for client-side apps.
-  // NOTE: You should create a Payment Link in Dodo Dashboard and replace this URL.
-  const paymentLinkUrl = 'https://test.checkout.dodopayments.com/buy/pdt_0Nd9xgoxK3W2IJCiietgg'
-  
-  // Optionally append the email as a query parameter if Dodo supports pre-filling
-  if (email) {
-    return `${paymentLinkUrl}?email=${encodeURIComponent(email)}`
+  const res = await fetch(`${PROXY_BASE_URL}/api/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: email?.trim() || undefined,
+      return_url: chrome.runtime?.getURL('sidepanel/index.html') || 'https://stylesnap.dev/success',
+      cancel_url: 'https://stylesnap.dev',
+    }),
+  })
+
+  const data = await res.json()
+  if (data.error) {
+    throw new Error(data.error)
   }
-  return paymentLinkUrl
+
+  return data.checkout_url
 }
 
-// ─── Activation (Dodo Payments) ──────────────────────────────────────────────
+// ─── Activation (Dodo Payments via Proxy) ─────────────────────────────────────
 
 /**
- * Verifies a purchase by email.
- * WARNING: Client-side verification is inherently insecure without a backend proxy.
- * For a real production app, this MUST call your own backend server (like the Vercel proxy)
- * which then securely calls Dodo Payments API using your secret API key.
+ * Verifies a purchase by calling our secure proxy endpoint.
+ * The proxy uses the Dodo Payments API key server-side to check payment status.
  */
 export async function activateLicense(email: string): Promise<boolean> {
   const normalized = email.trim().toLowerCase()
@@ -85,36 +88,22 @@ export async function activateLicense(email: string): Promise<boolean> {
   if (!emailPattern.test(normalized)) return false
 
   try {
-    // ⚠️ INSECURE MOCK FOR DEMONSTRATION ONLY ⚠️
-    // Since we removed the API key from the client, we cannot directly query Dodo API.
-    // In production, uncomment the PROXY_BASE_URL fetch block below.
-    console.log("Verify endpoint would be:", `${PROXY_BASE_URL}/api/verify`);
-    
-    /*
     const res = await fetch(`${PROXY_BASE_URL}/api/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: normalized }),
     })
     const data = await res.json()
+
     if (!data.valid) return false
-    */
 
-    // TEMPORARY: For testing without a backend, we will accept any email
-    // containing the word "pro" or "test" as a valid payment.
-    const isValidMock = normalized.includes('pro') || normalized.includes('test')
-    if (!isValidMock) {
-      // Simulate failure if it doesn't match mock criteria
-      return false
-    }
-
-    // Store license with email
+    // Store license with verified email
     const payload: Partial<LicenseStatus> = {
       isPro:      true,
       dailyUsed:  0,
       dailyLimit: Infinity,
       email:      normalized,
-      licenseKey: `mock_pay_${Date.now()}`,
+      licenseKey: data.payment_id || data.license_key || `dodo_${Date.now()}`,
     }
     await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
     return true
