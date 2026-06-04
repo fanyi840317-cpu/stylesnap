@@ -20,7 +20,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   ]
   const [settings, setSettings]     = useState<UserSettings | null>(null)
   const [license, setLicense]       = useState<LicenseStatus | null>(null)
-  const [licenseKey, setLicenseKey] = useState('')
+  const [email, setEmail]           = useState('')
   const [activating, setActivating] = useState(false)
   const [activateResult, setActivateResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [saved, setSaved]           = useState(false)
@@ -55,11 +55,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   }
 
   const handleActivate = async () => {
-    const key = licenseKey.trim()
-    if (!key) return
+    const e = email.trim()
+    if (!e) return
     setActivating(true)
     setActivateResult(null)
-    const ok = await activateLicense(key)
+    const ok = await activateLicense(e)
     setActivateResult(ok
       ? { ok: true,  msg: t('activateSuccess') }
       : { ok: false, msg: t('activateFail') })
@@ -74,7 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     await chrome.storage.local.remove('stylesnap_license')
     const l = await getLicenseStatus()
     setLicense(l)
-    setLicenseKey('')
+    setEmail('')
     setActivateResult(null)
   }
 
@@ -129,15 +129,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input
-                    type="text"
-                    value={licenseKey}
-                    onChange={e => setLicenseKey(e.target.value)}
-                    placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
-                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs font-mono text-gray-200 placeholder-gray-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40"
                   />
                   <button
                     onClick={handleActivate}
-                    disabled={activating || !licenseKey.trim()}
+                    disabled={activating || !email.trim()}
                     className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs rounded-lg transition-colors font-medium"
                   >
                     {activating ? t('activating') : t('activate')}

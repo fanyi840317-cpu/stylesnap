@@ -124,4 +124,4 @@ See [LICENSE](LICENSE) for details.
 
 - Lifetime access, no subscription
 - All future updates included
-- Secure checkout via Creem.io
+- Secure checkout via Dodo Payments

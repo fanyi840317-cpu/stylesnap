@@ -1,10 +1,13 @@
 /**
  * License Manager — StyleSnap
  * Free: 20 extractions/day   |   Pro: unlimited ($29 one-time)
+ *
+ * Uses Dodo Payments for checkout and verification.
+ * Proxy API: https://stylesnap-proxy.vercel.app
  */
 import type { LicenseStatus, UserSettings } from '@/shared/types'
 import { DEFAULT_SETTINGS } from '@/shared/types'
-import { STORAGE_KEYS, DAILY_FREE_LIMIT } from '@/shared/constants'
+import { STORAGE_KEYS, DAILY_FREE_LIMIT, PROXY_BASE_URL } from '@/shared/constants'
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 
@@ -48,29 +51,58 @@ export async function recordUsage(): Promise<boolean> {
   return true
 }
 
-// ─── Activation ───────────────────────────────────────────────────────────────
+// ─── Checkout (Dodo Payments) ────────────────────────────────────────────────
 
 /**
- * Validates and stores a license key.
- * Returns `true` on success, `false` on invalid format.
- * 
- * TODO: Replace simple format check with Creem.io API call before launch.
- * Endpoint: POST https://api.creem.io/v1/licenses/validate
- * Body: { license_key: string, product_id: string }
+ * Creates a Dodo Payments checkout session and returns the URL.
+ * The user completes payment on the Dodo checkout page.
  */
-export async function activateLicense(key: string): Promise<boolean> {
-  const normalized = key.trim().toUpperCase()
-  const pattern    = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/
-  if (!pattern.test(normalized)) return false
+export async function createCheckout(email?: string): Promise<string> {
+  const res = await fetch(`${PROXY_BASE_URL}/api/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email || '' }),
+  })
 
-  const payload: Partial<LicenseStatus> = {
-    isPro:      true,
-    dailyUsed:  0,
-    dailyLimit: Infinity,
-    licenseKey: normalized,
+  const data = await res.json()
+  if (data.error) throw new Error(data.error)
+  return data.checkout_url
+}
+
+// ─── Activation (Dodo Payments) ──────────────────────────────────────────────
+
+/**
+ * Verifies a purchase by email against the Dodo Payments API.
+ * Returns `true` on success, `false` if no purchase found.
+ */
+export async function activateLicense(email: string): Promise<boolean> {
+  const normalized = email.trim().toLowerCase()
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailPattern.test(normalized)) return false
+
+  try {
+    const res = await fetch(`${PROXY_BASE_URL}/api/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: normalized }),
+    })
+
+    const data = await res.json()
+    if (!data.valid) return false
+
+    // Store license with email
+    const payload: Partial<LicenseStatus> = {
+      isPro:      true,
+      dailyUsed:  0,
+      dailyLimit: Infinity,
+      email:      normalized,
+      licenseKey: data.payment_id || data.license_key || '',
+    }
+    await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
+    return true
+  } catch {
+    return false
   }
-  await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
-  return true
 }
 
 export async function deactivateLicense(): Promise<void> {
