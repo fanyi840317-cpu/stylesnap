@@ -1,20 +1,39 @@
 /* StyleSnap Overlay - injected into page */
 
-/* Grid Guidelines Mode */
-body.stylesnap-show-guidelines * {
+/* Assist Mode: Grid (All elements outlined) */
+body.stylesnap-mode-grid * {
   outline: 1px solid rgba(147, 51, 234, 0.2) !important;
 }
-body.stylesnap-show-guidelines *:hover {
+body.stylesnap-mode-grid *:hover {
   outline: 1px solid rgba(147, 51, 234, 0.6) !important;
   background-color: rgba(147, 51, 234, 0.05) !important;
 }
 /* Prevent the overlay and floating btn from getting outlined */
-body.stylesnap-show-guidelines #stylesnap-overlay,
-body.stylesnap-show-guidelines #stylesnap-overlay *,
-body.stylesnap-show-guidelines #stylesnap-floating-btn,
-body.stylesnap-show-guidelines #stylesnap-floating-btn * {
+body.stylesnap-mode-grid #stylesnap-overlay,
+body.stylesnap-mode-grid #stylesnap-overlay *,
+body.stylesnap-mode-grid #stylesnap-floating-btn,
+body.stylesnap-mode-grid #stylesnap-floating-btn *,
+body.stylesnap-mode-grid .stylesnap-guide {
   outline: none !important;
   background-color: transparent !important;
+}
+
+/* Assist Mode: Guidelines (Crosshairs) */
+.stylesnap-guide {
+  position: fixed;
+  background-color: rgba(147, 51, 234, 0.5);
+  z-index: 2147483646;
+  pointer-events: none;
+  display: none;
+}
+body.stylesnap-mode-guidelines .stylesnap-guide {
+  display: block;
+}
+#stylesnap-guide-t, #stylesnap-guide-b {
+  left: 0; right: 0; height: 1px;
+}
+#stylesnap-guide-l, #stylesnap-guide-r {
+  top: 0; bottom: 0; width: 1px;
 }
 
 #stylesnap-overlay {
@@ -109,21 +128,6 @@ body.stylesnap-show-guidelines #stylesnap-floating-btn * {
   font-size: 10.5px;
   line-height: 1.6;
   white-space: pre-wrap;
-}
-
-#stylesnap-overlay .ss-footer-hint {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  font-size: 9px;
-  color: #64748b;
-  text-align: right;
-}
-#stylesnap-overlay[data-lang="en"] .ss-footer-hint::before {
-  content: "Press 'G' for Grid";
-}
-#stylesnap-overlay[data-lang="zh"] .ss-footer-hint::before {
-  content: "按 'G' 切换网格辅助线";
 }
 
 #stylesnap-overlay .ss-prop {

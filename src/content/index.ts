@@ -13,9 +13,46 @@ import type { ParsedCSS } from '@/shared/types'
 let isActive = false
 let lastHighlighted: Element | null = null
 let lockedElement: Element | null = null
+let assistMode = 1 // 0: Off, 1: Guidelines (Crosshairs), 2: Grid (Outlines)
 const OVERLAY_ID = 'stylesnap-overlay'
 const HIGHLIGHT_CLASS = 'stylesnap-highlight'
 const LOCKED_CLASS = 'stylesnap-locked'
+
+function updateAssistModeUI() {
+  document.body.classList.remove('stylesnap-mode-guidelines', 'stylesnap-mode-grid')
+  if (assistMode === 1) {
+    document.body.classList.add('stylesnap-mode-guidelines')
+  } else if (assistMode === 2) {
+    document.body.classList.add('stylesnap-mode-grid')
+  }
+}
+
+function initGuides() {
+  const ids = ['stylesnap-guide-t', 'stylesnap-guide-b', 'stylesnap-guide-l', 'stylesnap-guide-r']
+  ids.forEach(id => {
+    if (!document.getElementById(id)) {
+      const el = document.createElement('div')
+      el.id = id
+      el.className = 'stylesnap-guide'
+      el.setAttribute('data-stylesnap', 'true')
+      document.body.appendChild(el)
+    }
+  })
+}
+
+function updateGuides(rect: DOMRect) {
+  if (assistMode !== 1) return
+  const t = document.getElementById('stylesnap-guide-t')
+  const b = document.getElementById('stylesnap-guide-b')
+  const l = document.getElementById('stylesnap-guide-l')
+  const r = document.getElementById('stylesnap-guide-r')
+  if (t && b && l && r) {
+    t.style.top = `${rect.top}px`
+    b.style.top = `${rect.bottom}px`
+    l.style.left = `${rect.left}px`
+    r.style.left = `${rect.right}px`
+  }
+}
 
 // ─── Overlay UI ───────────────────────────────────────────────────────
 
@@ -57,7 +94,6 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
     </div>
     ${tailwindStr ? `<div class="ss-tw">${tailwindStr}</div>` : ''}
     <pre class="ss-css">${cssPreview}</pre>
-    <div class="ss-footer-hint"></div>
   `
 
   // Position overlay
@@ -150,6 +186,7 @@ function onMouseMove(e: MouseEvent) {
   highlightElement(el)
   const parsedCSS = parseElement(el)
   showOverlay(el, parsedCSS)
+  updateGuides(el.getBoundingClientRect())
 
   chrome.runtime.sendMessage({
     type: 'ELEMENT_HOVERED',
@@ -209,6 +246,7 @@ function onClick(e: MouseEvent) {
   const componentCSS = extractComponentCSS(el, 3)
 
   showOverlay(el, parsedCSS)
+  updateGuides(el.getBoundingClientRect())
 
   chrome.runtime.sendMessage({
     type: 'ELEMENT_CLICKED',
@@ -233,11 +271,17 @@ function onKeyDown(e: KeyboardEvent) {
   if (isActive && (e.key === 'g' || e.key === 'G')) {
     e.preventDefault()
     e.stopPropagation()
-    document.body.classList.toggle('stylesnap-show-guidelines')
+    assistMode = (assistMode + 1) % 3
+    updateAssistModeUI()
     
     // Show a quick toast
-    const isOn = document.body.classList.contains('stylesnap-show-guidelines')
-    showToast(isOn ? 'Grid Guidelines: ON' : 'Grid Guidelines: OFF')
+    const modeNames = ['Assist: OFF', 'Assist: Guidelines', 'Assist: Grid']
+    showToast(modeNames[assistMode])
+
+    const target = lockedElement || lastHighlighted
+    if (target) {
+      updateGuides(target.getBoundingClientRect())
+    }
     return
   }
 
@@ -296,14 +340,26 @@ function showToast(message: string) {
   }, 2000)
 }
 
+function onScroll() {
+  if (!isActive) return
+  const target = lockedElement || lastHighlighted
+  if (target) {
+    updateGuides(target.getBoundingClientRect())
+  }
+}
+
 // ─── Inspector control ────────────────────────────────────────────────
 
 function enableInspector() {
   if (isActive) return
   isActive = true
+  initGuides()
+  assistMode = 1 // 默认开启辅助线 (Guidelines)
+  updateAssistModeUI()
   document.addEventListener('mousemove', onMouseMove, true)
   document.addEventListener('click', onClick, true)
   document.addEventListener('keydown', onKeyDown, true)
+  document.addEventListener('scroll', onScroll, true)
 
   const btn = document.getElementById(FLOATING_BTN_ID)
   if (btn) {
@@ -327,9 +383,12 @@ function enableInspector() {
 
 function disableInspector() {
   isActive = false
+  assistMode = 0
+  updateAssistModeUI()
   document.removeEventListener('mousemove', onMouseMove, true)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
+  document.removeEventListener('scroll', onScroll, true)
   unlockElement()
   removeHighlight()
   hideOverlay()
