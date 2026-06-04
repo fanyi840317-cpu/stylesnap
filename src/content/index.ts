@@ -57,6 +57,7 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
     </div>
     ${tailwindStr ? `<div class="ss-tw">${tailwindStr}</div>` : ''}
     <pre class="ss-css">${cssPreview}</pre>
+    <div class="ss-footer-hint"></div>
   `
 
   // Position overlay
@@ -224,6 +225,22 @@ function onClick(e: MouseEvent) {
 }
 
 function onKeyDown(e: KeyboardEvent) {
+  // Ignore if typing in an input
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) {
+    return
+  }
+
+  if (isActive && (e.key === 'g' || e.key === 'G')) {
+    e.preventDefault()
+    e.stopPropagation()
+    document.body.classList.toggle('stylesnap-show-guidelines')
+    
+    // Show a quick toast
+    const isOn = document.body.classList.contains('stylesnap-show-guidelines')
+    showToast(isOn ? 'Grid Guidelines: ON' : 'Grid Guidelines: OFF')
+    return
+  }
+
   if (e.key === 'Escape' && isActive) {
     e.preventDefault()
     e.stopPropagation()
@@ -239,6 +256,44 @@ function onKeyDown(e: KeyboardEvent) {
       chrome.runtime.sendMessage({ type: 'DISABLE_INSPECTOR' }).catch(() => {})
     }
   }
+}
+
+// ─── Toast Notification ────────────────────────────────────────────────
+
+let toastTimeout: number | null = null
+function showToast(message: string) {
+  let toast = document.getElementById('stylesnap-toast')
+  if (!toast) {
+    toast = document.createElement('div')
+    toast.id = 'stylesnap-toast'
+    Object.assign(toast.style, {
+      position: 'fixed',
+      bottom: '80px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(15, 23, 42, 0.9)',
+      color: '#fff',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: '13px',
+      fontWeight: '500',
+      zIndex: '2147483647',
+      pointerEvents: 'none',
+      transition: 'opacity 0.2s ease',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      border: '1px solid rgba(255,255,255,0.1)'
+    })
+    document.body.appendChild(toast)
+  }
+  
+  toast.textContent = message
+  toast.style.opacity = '1'
+  
+  if (toastTimeout) window.clearTimeout(toastTimeout)
+  toastTimeout = window.setTimeout(() => {
+    if (toast) toast.style.opacity = '0'
+  }, 2000)
 }
 
 // ─── Inspector control ────────────────────────────────────────────────
