@@ -25,6 +25,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
   ]
 
   const handleUpgrade = () => {
+    // We open Dodo Payments via our proxy endpoint or direct link if configured
     setStep('checkout')
   }
 
@@ -83,35 +84,34 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
           </p>
         </div>
 
-        {/* Feature list */}
-        <div className="px-4 py-3 max-h-[45vh] overflow-y-auto space-y-1.5">
-          {PRO_FEATURES.map((feat, i) => (
-            <div key={i} className="flex items-start gap-3 py-1.5">
-              <span className="text-base leading-none mt-0.5 flex-none">{feat.icon}</span>
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-gray-200">{feat.title}</div>
-                <div className="text-[11px] text-gray-500 leading-relaxed">{feat.desc}</div>
-              </div>
-              <Check size={13} className="text-green-400 flex-none mt-0.5 ml-auto" />
+        {step === 'price' ? (
+          <>
+            {/* Feature list */}
+            <div className="px-4 py-3 max-h-[45vh] overflow-y-auto space-y-1.5">
+              {PRO_FEATURES.map((feat, i) => (
+                <div key={i} className="flex items-start gap-3 py-1.5">
+                  <span className="text-base leading-none mt-0.5 flex-none">{feat.icon}</span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-gray-200">{feat.title}</div>
+                    <div className="text-[11px] text-gray-500 leading-relaxed">{feat.desc}</div>
+                  </div>
+                  <Check size={13} className="text-green-400 flex-none mt-0.5 ml-auto" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Divider */}
-        <div className="h-px bg-gray-700 mx-4" />
+            {/* Divider */}
+            <div className="h-px bg-gray-700 mx-4" />
 
-        {/* Trust badges */}
-        <div className="flex items-center justify-center gap-4 px-4 py-2">
-          {[t('secure'), t('instant'), t('lifetime')].map(badge => (
-            <span key={badge} className="text-[10px] text-gray-500">{badge}</span>
-          ))}
-        </div>
+            {/* Trust badges */}
+            <div className="flex items-center justify-center gap-4 px-4 py-2">
+              {[t('secure'), t('instant'), t('lifetime')].map(badge => (
+                <span key={badge} className="text-[10px] text-gray-500">{badge}</span>
+              ))}
+            </div>
 
-        {/* CTA */}
-        <div className="px-4 pb-5 pt-1">
-          {step === 'price' ? (
-            /* Step 1: Show price + Upgrade button */
-            <div className="space-y-2">
+            {/* CTA */}
+            <div className="px-4 pb-5 pt-1 space-y-2">
               <button
                 onClick={handleUpgrade}
                 className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-900/40 active:scale-[0.98]"
@@ -132,62 +132,56 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose }) => {
                 {t('learnMore')}
               </button>
             </div>
-          ) : (
-            /* Step 2: Email input + Pay with Dodo */
-            <div className="space-y-3">
-              {/* Back */}
-              <button
-                onClick={() => { setStep('price'); setCheckoutError(''); }}
-                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                ← {t('back') || 'Back'}
-              </button>
-
-              {/* Email */}
-              <div>
-                <label className="text-xs text-gray-400 mb-1.5 block">
-                  {t('emailLabel') || 'Email for license activation'}
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40"
-                />
-                <p className="text-[10px] text-gray-500 mt-1">
-                  {t('emailHint') || 'After payment, enter this email in Settings to activate Pro.'}
-                </p>
+          </>
+        ) : (
+          <div className="px-4 py-6">
+            <h3 className="text-sm font-semibold text-white mb-2">{t('enterEmailTitle')}</h3>
+            <p className="text-xs text-gray-400 mb-4">{t('enterEmailDesc')}</p>
+            
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder={t('emailPlaceholder') || 'you@example.com'}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 mb-4"
+              autoFocus
+              onKeyDown={e => {
+                if (e.key === 'Enter' && email.trim() && !checkingOut) {
+                  handleCheckout()
+                }
+              }}
+            />
+            
+            {checkoutError && (
+              <div className="flex items-start gap-2 text-xs bg-red-900/20 text-red-300 border border-red-700/30 rounded-lg px-3 py-2 mb-4">
+                <AlertCircle size={14} className="mt-0.5 flex-none" />
+                {checkoutError}
               </div>
-
-              {/* Error */}
-              {checkoutError && (
-                <div className="flex items-start gap-2 text-xs text-red-400 bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2">
-                  <AlertCircle size={12} className="mt-0.5 flex-none" />
-                  {checkoutError}
-                </div>
-              )}
-
-              {/* Pay button */}
+            )}
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStep('price')}
+                className="flex-1 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
+                disabled={checkingOut}
+              >
+                {t('back')}
+              </button>
               <button
                 onClick={handleCheckout}
-                disabled={checkingOut}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-900/40 active:scale-[0.98]"
+                disabled={checkingOut || !email.trim() || !email.includes('@')}
+                className="flex-[2] py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-900/40"
               >
-                {checkingOut ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Zap size={15} />
-                )}
-                {checkingOut ? (t('loading') || 'Loading...') : `${t('payWith') || 'Pay with'} Dodo — $29`}
+                {checkingOut ? <Loader2 size={16} className="animate-spin" /> : t('continueToDodo')}
               </button>
-
-              <p className="text-[10px] text-gray-600 text-center">
-                {t('secureCheckout') || 'Secure checkout powered by Dodo Payments'}
-              </p>
             </div>
-          )}
-        </div>
+            <div className="mt-4 flex justify-center">
+              <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                {t('secureDodo')}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

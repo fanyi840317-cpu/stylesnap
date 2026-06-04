@@ -48,6 +48,14 @@ const translations = {
     lifetime: '♾️ Lifetime deal',
     upgradeToPro: 'Upgrade to Pro — $29',
     learnMore: 'Learn more at stylesnap.dev',
+    // Checkout
+    enterEmailTitle: 'Enter your email for checkout',
+    enterEmailDesc: "We'll use this to send your license and receipt via Dodo Payments.",
+    emailPlaceholder: 'you@example.com',
+    back: 'Back',
+    continueToDodo: 'Continue to Dodo Payments',
+    secureDodo: '🔒 Secure payment powered by Dodo',
+    checkoutError: 'Failed to create checkout. Please try again.',
     // Features
     featUnlimited: 'Unlimited extractions',
     featUnlimitedDesc: 'No daily limits, extract as many elements as you want',
@@ -136,6 +144,14 @@ const translations = {
     lifetime: '♾️ 终身授权',
     upgradeToPro: '升级到专业版 — $29',
     learnMore: '访问 stylesnap.dev 了解更多',
+    // Checkout
+    enterEmailTitle: '请输入您的邮箱',
+    enterEmailDesc: '我们将使用此邮箱通过 Dodo Payments 发送您的许可证和收据。',
+    emailPlaceholder: 'your@email.com',
+    back: '返回',
+    continueToDodo: '前往 Dodo Payments 结账',
+    secureDodo: '🔒 Dodo 提供安全支付保障',
+    checkoutError: '创建结账失败，请重试。',
     // Features
     featUnlimited: '无限制提取',
     featUnlimitedDesc: '告别每日额度限制，随心所欲提取任何元素',
