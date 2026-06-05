@@ -98,40 +98,37 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
 
   // Position overlay
   // 先将 display 设为 block 以便获取悬浮框的真实尺寸
-  overlay.style.display = 'block'
+  overlay.style.setProperty('display', 'block', 'important')
   const overlayRect = overlay.getBoundingClientRect()
   const overlayWidth = overlayRect.width || 320
   const overlayHeight = overlayRect.height || 150
 
-  const scrollY = window.scrollY
-  const scrollX = window.scrollX
-
-  // 默认放在元素下方
-  let top = rect.bottom + scrollY + 4
-  let left = rect.left + scrollX
-  overlay.style.transform = 'none' // 重置 transform
+  // 默认放在元素下方 (使用 fixed 定位，无需 scrollX/Y)
+  let top = rect.bottom + 4
+  let left = rect.left
+  overlay.style.setProperty('transform', 'none', 'important') // 重置 transform
 
   // 如果下方空间不够，放在元素上方
   if (rect.bottom + overlayHeight + 10 > window.innerHeight) {
-    top = rect.top + scrollY - overlayHeight - 4
+    top = rect.top - overlayHeight - 4
     
     // 如果上方空间也不够，就固定在视口底部
-    if (top < scrollY) {
-      top = scrollY + window.innerHeight - overlayHeight - 10
+    if (top < 0) {
+      top = window.innerHeight - overlayHeight - 10
     }
   }
 
   // 处理水平方向边界
-  const maxLeft = window.innerWidth - overlayWidth + scrollX - 10
-  left = Math.max(scrollX + 10, Math.min(left, maxLeft))
+  const maxLeft = window.innerWidth - overlayWidth - 10
+  left = Math.max(10, Math.min(left, maxLeft))
 
-  overlay.style.top = `${top}px`
-  overlay.style.left = `${left}px`
+  overlay.style.setProperty('top', `${top}px`, 'important')
+  overlay.style.setProperty('left', `${left}px`, 'important')
 }
 
 function hideOverlay() {
   const overlay = document.getElementById(OVERLAY_ID)
-  if (overlay) overlay.style.display = 'none'
+  if (overlay) overlay.style.setProperty('display', 'none', 'important')
 }
 
 function highlightElement(el: Element) {
@@ -317,6 +314,7 @@ function showToast(message: string) {
   if (!toast) {
     toast = document.createElement('div')
     toast.id = 'stylesnap-toast'
+    toast.setAttribute('data-stylesnap', 'true')
     Object.assign(toast.style, {
       position: 'fixed',
       bottom: '80px',

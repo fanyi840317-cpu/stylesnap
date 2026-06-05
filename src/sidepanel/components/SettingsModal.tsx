@@ -24,7 +24,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const [activating, setActivating] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [activateResult, setActivateResult] = useState<{ ok: boolean; msg: string } | null>(null)
-  const [saved, setSaved]           = useState(false)
 
   useEffect(() => {
     Promise.all([getSettings(), getLicenseStatus()]).then(([s, l]) => {
@@ -33,26 +32,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     })
   }, [])
 
-  const handleTheme = (theme: ThemeOption) => {
+  const handleTheme = async (theme: ThemeOption) => {
     if (!settings) return
-    setSettings({ ...settings, theme })
+    const newSettings = { ...settings, theme }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
   }
 
-  const handleToggle = (key: keyof UserSettings) => {
+  const handleToggle = async (key: keyof UserSettings) => {
     if (!settings) return
-    setSettings({ ...settings, [key]: !settings[key as keyof UserSettings] })
+    const newSettings = { ...settings, [key]: !settings[key as keyof UserSettings] }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
   }
 
-  const handleApiKey = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleApiKey = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!settings) return
-    setSettings({ ...settings, aiApiKey: e.target.value })
+    const newSettings = { ...settings, aiApiKey: e.target.value }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
   }
 
-  const handleSave = async () => {
+  const handleAssistMode = async (mode: 0 | 1 | 2) => {
     if (!settings) return
-    await saveSettings(settings)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    const newSettings = { ...settings, assistMode: mode }
+    setSettings(newSettings)
+    await saveSettings(newSettings)
   }
 
   const handleActivateKey = async () => {
@@ -269,7 +274,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                     return (
                       <button
                         key={mode}
-                        onClick={() => setSettings({ ...settings, assistMode: mode })}
+                        onClick={() => handleAssistMode(mode)}
                         className={`flex-1 py-1.5 text-[10px] rounded border transition-colors ${
                           settings.assistMode === mode
                             ? 'bg-indigo-600 border-indigo-500 text-white'
@@ -309,22 +314,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               )}
             </div>
           </section>
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-2 px-4 py-3 border-t border-gray-700">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
-          >
-            {t('cancel')}
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
-          >
-            {saved ? <><Check size={14} /> {t('saved')}</> : t('saveSettings')}
-          </button>
         </div>
       </div>
     </div>
