@@ -241,22 +241,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
               {t('behavior')}
             </h3>
-            <div className="space-y-1">
-              <Toggle
-                label={t('showOverlay')}
-                value={settings.showOverlay}
-                onChange={() => handleToggle('showOverlay')}
-              />
-              <Toggle
-                label={t('autoInspect')}
-                value={settings.autoInspect}
-                onChange={() => handleToggle('autoInspect')}
-              />
-              <Toggle
-                label={t('copySound')}
-                value={settings.copySound}
-                onChange={() => handleToggle('copySound')}
-              />
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Toggle
+                  label={t('showOverlay')}
+                  value={settings.showOverlay}
+                  onChange={() => handleToggle('showOverlay')}
+                />
+                <Toggle
+                  label={t('autoInspect')}
+                  value={settings.autoInspect}
+                  onChange={() => handleToggle('autoInspect')}
+                />
+                <Toggle
+                  label={t('copySound')}
+                  value={settings.copySound}
+                  onChange={() => handleToggle('copySound')}
+                />
+              </div>
+              
+              {/* Assist Mode Dropdown */}
+              <div className="pt-2 border-t border-gray-700/50">
+                <label className="text-xs text-gray-400 block mb-1.5">{t('assistModeLabel') || 'Assist Mode'}</label>
+                <div className="flex gap-1.5">
+                  {([0, 1, 2] as const).map(mode => {
+                    const labels = [t('assistOff') || 'Off', t('assistGuidelines') || 'Guidelines', t('assistGrid') || 'Grid']
+                    return (
+                      <button
+                        key={mode}
+                        onClick={() => setSettings({ ...settings, assistMode: mode })}
+                        className={`flex-1 py-1.5 text-[10px] rounded border transition-colors ${
+                          settings.assistMode === mode
+                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
+                        }`}
+                      >
+                        {labels[mode]}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </section>
 

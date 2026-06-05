@@ -274,6 +274,13 @@ function onKeyDown(e: KeyboardEvent) {
     assistMode = (assistMode + 1) % 3
     updateAssistModeUI()
     
+    // Save to settings
+    chrome.storage.local.get(['stylesnap_settings'], (res) => {
+      const s = res.stylesnap_settings || {}
+      s.assistMode = assistMode
+      chrome.storage.local.set({ stylesnap_settings: s })
+    })
+    
     // Show a quick toast
     const modeNames = ['Assist: OFF', 'Assist: Guidelines', 'Assist: Grid']
     showToast(modeNames[assistMode])
@@ -354,8 +361,17 @@ function enableInspector() {
   if (isActive) return
   isActive = true
   initGuides()
-  assistMode = 1 // 默认开启辅助线 (Guidelines)
-  updateAssistModeUI()
+  
+  // Load assistMode from settings
+  chrome.storage.local.get(['stylesnap_settings'], (res) => {
+    if (res.stylesnap_settings && res.stylesnap_settings.assistMode !== undefined) {
+      assistMode = res.stylesnap_settings.assistMode
+    } else {
+      assistMode = 1 // default
+    }
+    updateAssistModeUI()
+  })
+
   document.addEventListener('mousemove', onMouseMove, true)
   document.addEventListener('click', onClick, true)
   document.addEventListener('keydown', onKeyDown, true)
@@ -501,18 +517,28 @@ if (document.readyState === 'loading') {
 // ─── Message handling ─────────────────────────────────────────────────
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local' && changes.language) {
-    const lang = changes.language.newValue
-    // Update floating button text
-    if (isActive) {
-      enableInspector() // Re-apply active state UI
-    } else {
-      disableInspector() // Re-apply inactive state UI
+  if (namespace === 'local') {
+    if (changes.language) {
+      const lang = changes.language.newValue
+      // Update floating button text
+      if (isActive) {
+        enableInspector() // Re-apply active state UI
+      } else {
+        disableInspector() // Re-apply inactive state UI
+      }
+      // Update overlay language
+      const overlay = document.getElementById(OVERLAY_ID)
+      if (overlay) {
+        overlay.setAttribute('data-lang', lang || 'en')
+      }
     }
-    // Update overlay language
-    const overlay = document.getElementById(OVERLAY_ID)
-    if (overlay) {
-      overlay.setAttribute('data-lang', lang || 'en')
+    
+    if (changes.stylesnap_settings) {
+      const newSettings = changes.stylesnap_settings.newValue
+      if (newSettings && newSettings.assistMode !== undefined) {
+        assistMode = newSettings.assistMode
+        updateAssistModeUI()
+      }
     }
   }
 })

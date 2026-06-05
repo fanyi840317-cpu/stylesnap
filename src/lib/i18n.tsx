@@ -99,6 +99,11 @@ const translations = {
     showOverlay: 'Show overlay highlight on hover',
     autoInspect: 'Auto-inspect on extension open',
     copySound: 'Copy feedback sound',
+    // Assist Mode
+    assistModeLabel: 'Assist Mode',
+    assistOff: 'Off',
+    assistGuidelines: 'Guidelines (Crosshairs)',
+    assistGrid: 'Grid (Outlines)',
     usage: "Today's Usage",
     unlimited: 'Unlimited (Pro)',
     freeTier: 'Free tier',
@@ -203,6 +208,11 @@ const translations = {
     showOverlay: '悬停时显示高亮遮罩',
     autoInspect: '打开扩展时自动开启审查',
     copySound: '复制成功提示音',
+    // Assist Mode
+    assistModeLabel: '辅助线模式',
+    assistOff: '关闭',
+    assistGuidelines: '十字对齐线',
+    assistGrid: '全局网格框',
     usage: "今日使用量",
     unlimited: '无限制 (专业版)',
     freeTier: '免费额度',

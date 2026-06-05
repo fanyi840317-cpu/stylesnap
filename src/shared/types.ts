@@ -115,6 +115,7 @@ export interface UserSettings {
   autoInspect: boolean
   copySound:   boolean
   aiApiKey:    string
+  assistMode:  0 | 1 | 2  // 0: Off, 1: Guidelines, 2: Grid
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -124,6 +125,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   autoInspect: false,
   copySound:   false,
   aiApiKey:    '',
+  assistMode:  1,
 }
 
 export interface StoredData {
