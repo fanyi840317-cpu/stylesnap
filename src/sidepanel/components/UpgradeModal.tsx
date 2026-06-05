@@ -222,14 +222,14 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onClose, onActivated
           <div className="px-4 py-6">
             <h3 className="text-sm font-semibold text-white mb-2">{t('enterLicenseKeyTitle') || 'Enter License Key'}</h3>
             <p className="text-xs text-gray-400 mb-4">
-              {t('enterLicenseKeyDesc') || 'Paste the license key you received after purchase (format: PRO-XXXX-XXXX-XXXX).'}
+              {t('enterLicenseKeyDesc') || 'Paste the license key you received after purchase.'}
             </p>
             
             <input
               type="text"
               value={licenseKey}
-              onChange={e => setLicenseKey(e.target.value.toUpperCase())}
-              placeholder="PRO-XXXX-XXXX-XXXX"
+              onChange={e => setLicenseKey(e.target.value.trim())}
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 mb-4 font-mono tracking-wider"
               autoFocus
               onKeyDown={e => {

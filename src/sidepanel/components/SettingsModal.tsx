@@ -145,17 +145,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-500">{t('licenseKeyLabel') || 'License Key'}</span>
                       <span className="text-gray-300 font-mono">
-                        {license.licenseKey.substring(0, 8)}••••••••
+                        {license.licenseKey.length > 12
+                          ? license.licenseKey.substring(0, 8) + '•••' + license.licenseKey.slice(-4)
+                          : license.licenseKey.substring(0, 4) + '••••'}
                       </span>
                     </div>
-                    {license.activationsLimit && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">{t('devicesLabel') || 'Devices'}</span>
-                        <span className="text-gray-300">
-                          {license.activationsUsed || 1} / {license.activationsLimit}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -165,8 +159,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                   <input
                     type="text"
                     value={licenseKeyInput}
-                    onChange={e => setLicenseKeyInput(e.target.value.toUpperCase())}
-                    placeholder="PRO-XXXX-XXXX-XXXX"
+                    onChange={e => setLicenseKeyInput(e.target.value.trim())}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 font-mono tracking-wider"
                     onKeyDown={e => {
                       if (e.key === 'Enter' && licenseKeyInput.trim() && !activating) {

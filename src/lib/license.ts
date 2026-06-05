@@ -45,8 +45,6 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
       email:           stored.email,
       licenseKey:      stored.licenseKey,
       instanceId:      stored.instanceId,
-      activationsUsed: stored.activationsUsed,
-      activationsLimit: stored.activationsLimit,
     }
   }
 
@@ -136,8 +134,6 @@ export async function activateLicenseKey(licenseKey: string): Promise<{
       dailyLimit:       Infinity,
       licenseKey:       key,
       instanceId:       data.instance_id,
-      activationsUsed:  data.activations_used,
-      activationsLimit: data.activations_limit,
     }
     await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
     return { success: true }
@@ -153,8 +149,6 @@ export async function activateLicenseKey(licenseKey: string): Promise<{
  */
 export async function validateLicense(licenseKey: string): Promise<{
   valid: boolean
-  activationsUsed?: number
-  activationsLimit?: number
   expiresAt?: string | null
 }> {
   try {
@@ -170,16 +164,12 @@ export async function validateLicense(licenseKey: string): Promise<{
       const current = await getLicenseStatus()
       const payload: Partial<LicenseStatus> = {
         ...current,
-        activationsUsed:  data.activations_used,
-        activationsLimit: data.activations_limit,
       }
       await chrome.storage.local.set({ [STORAGE_KEYS.LICENSE]: payload })
     }
 
     return {
       valid: data.valid === true,
-      activationsUsed: data.activations_used,
-      activationsLimit: data.activations_limit,
       expiresAt: data.expires_at,
     }
   } catch {

@@ -102,8 +102,6 @@ export interface LicenseStatus {
   email?:          string
   licenseKey?:     string
   instanceId?:     string   // DodoPayments activation instance ID
-  activationsUsed?: number
-  activationsLimit?: number
 }
 
 // ── User Settings ─────────────────────────────────────────────────────────────
