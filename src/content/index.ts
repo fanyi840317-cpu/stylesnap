@@ -77,7 +77,7 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
   const overlay = getOrCreateOverlay()
   const rect = el.getBoundingClientRect()
 
-  const { styles, tailwindClasses = [], tailwindMatchRate = 0 } = parsedCSS
+  const { styles, tailwindClasses = [], tailwindMatchRate = 0, responsiveStyles, pseudoStyles } = parsedCSS
   const tailwindStr = tailwindClasses.slice(0, 8).join(' ') + (tailwindClasses.length > 8 ? ' …' : '')
   const matchPct = Math.round(tailwindMatchRate * 100)
 
@@ -86,6 +86,30 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
     .map(([k, v]) => `<span class="ss-prop">${k}:</span> <span class="ss-val">${v}</span>`)
     .join('\n')
 
+  // Responsive (@media) styles
+  let responsiveHTML = ''
+  if (responsiveStyles && Object.keys(responsiveStyles).length > 0) {
+    const items = Object.entries(responsiveStyles).flatMap(([media, props]) =>
+      `<div><strong>${media}:</strong></div>` +
+      Object.entries(props).slice(0, 4).map(([k, v]) =>
+        `<span class="ss-prop">${k}:</span> <span class="ss-val">${v}</span>`
+      ).join('\n')
+    ).join('\n')
+    responsiveHTML = `\n    <div class="ss-responsive"><strong>@media</strong>\n${items}\n    </div>`
+  }
+
+  // Pseudo-class styles (:hover etc.)
+  let pseudoHTML = ''
+  if (pseudoStyles && Object.keys(pseudoStyles).length > 0) {
+    const items = Object.entries(pseudoStyles).flatMap(([pseudo, props]) =>
+      `<div><strong>${pseudo}:</strong></div>` +
+      Object.entries(props).slice(0, 4).map(([k, v]) =>
+        `<span class="ss-prop">${k}:</span> <span class="ss-val">${v}</span>`
+      ).join('\n')
+    ).join('\n')
+    pseudoHTML = `\n    <div class="ss-pseudo"><strong>:pseudo</strong>\n${items}\n    </div>`
+  }
+
   overlay.innerHTML = `
     <div class="ss-header">
       <span class="ss-tag">${el.tagName.toLowerCase()}</span>
@@ -93,7 +117,7 @@ function showOverlay(el: Element, parsedCSS: ParsedCSS) {
       <span class="ss-match">TW ${matchPct}%</span>
     </div>
     ${tailwindStr ? `<div class="ss-tw">${tailwindStr}</div>` : ''}
-    <pre class="ss-css">${cssPreview}</pre>
+    <pre class="ss-css">${cssPreview}</pre>${responsiveHTML}${pseudoHTML}
   `
 
   // Position overlay
@@ -587,4 +611,12 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload?: unknown
       sendResponse({ error: 'Unknown message type' })
   }
   return true // keep channel open for async responses
+})
+
+
+// ── Automation bridge (for MCP testing) ─────────────────────
+// Allow MCP tools to control inspector via CustomEvent on document.body
+document.addEventListener('__styleSnap_toggleInspector', () => {
+  if (isActive) disableInspector()
+  else enableInspector()
 })

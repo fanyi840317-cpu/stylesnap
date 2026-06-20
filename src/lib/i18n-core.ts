@@ -1,8 +1,58 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+export type Language = 'en' | 'zh'
 
-type Language = 'en' | 'zh'
+/** Country code → language mapping for IP-based detection */
+export const COUNTRY_LANG_MAP: Record<string, Language> = {
+  CN: 'zh',
+  TW: 'zh',
+  HK: 'zh',
+  MO: 'zh',
+  SG: 'zh',
+}
 
-const translations = {
+/** Detect language from browser's navigator */
+export function detectFromBrowser(): Language | null {
+  const langs = navigator.languages || [navigator.language]
+  for (const l of langs) {
+    if (l.startsWith('zh')) return 'zh'
+  }
+  return null
+}
+
+/** Detect language from IP geolocation (async, may fail) */
+export async function detectFromIP(): Promise<Language | null> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000)
+    const res = await fetch('https://ipapi.co/json/', { signal: controller.signal })
+    clearTimeout(timeout)
+    if (!res.ok) return null
+    const data = await res.json()
+    const country: string = data.country_code
+    return COUNTRY_LANG_MAP[country] ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Detect language with full priority chain */
+export async function detectLang(): Promise<Language> {
+  // 1. Check saved preference
+  const stored = await chrome.storage.local.get(['language'])
+  if (stored.language === 'zh' || stored.language === 'en') return stored.language
+
+  // 2. Browser language
+  const browser = detectFromBrowser()
+  if (browser) return browser
+
+  // 3. IP geolocation
+  const ip = await detectFromIP()
+  if (ip) return ip
+
+  // 4. Fallback
+  return 'en'
+}
+
+export const translations = {
   en: {
     // App
     inspect: 'Inspect',
@@ -47,7 +97,7 @@ const translations = {
     instant: '📧 Instant delivery',
     lifetime: '♾️ Lifetime deal',
     upgradeToPro: 'Upgrade to Pro — $29',
-    learnMore: 'Learn more at stylesnap.dev',
+    learnMore: 'Learn more at lucidlibs.dev/stylesnap',
     // Checkout
     enterEmailTitle: 'Enter your email for checkout',
     enterEmailDesc: "We'll use this to send your license and receipt via Dodo Payments.",
@@ -87,8 +137,16 @@ const translations = {
     activateLicense: 'Activate',
     alreadyHaveKey: 'Already have a license key?',
     needToPurchase: "Don't have a key? Purchase now →",
+    forgotLicenseKey: 'Forgot your license key?',
     licenseKeyLabel: 'License Key',
     devicesLabel: 'Devices',
+    emailLabel: 'Email',
+    instanceIdLabel: 'Instance',
+    activatedAtLabel: 'Activated',
+    expiresAtLabel: 'Expires',
+    licenseExpired: 'License Expired',
+    licenseDisabled: 'License Disabled',
+    deactivationConfirm: 'Remove license from this device? You can re-activate later.',
     theme: 'Theme',
     light: 'Light',
     dark: 'Dark',
@@ -97,8 +155,18 @@ const translations = {
     aiCodeDesc: 'Provide your own OpenAI-compatible API key to enable AI fallback for complex CSS → code conversions.',
     behavior: 'Behavior',
     showOverlay: 'Show overlay highlight on hover',
+    showFloatingBtn: 'Show Floating Button',
     autoInspect: 'Auto-inspect on extension open',
     copySound: 'Copy feedback sound',
+    autoOpenSidePanel: 'Open side panel on inspect',
+    // Floating Button Tooltips
+    btnTooltip: 'StyleSnap\nClick: Toggle Side Panel\nDrag: Move Button',
+    btnInspect: 'Inspect Element',
+    btnPanel: 'Toggle Side Panel',
+    btnAssist: 'Toggle Assist Mode',
+    btnMode: 'Cycle mode: Off → Inspect → Guidelines → Grid  [G]',
+    btnCopyCSS: 'Copy CSS of selected element',
+    btnCollapse: 'Collapse to edge',
     // Assist Mode
     assistModeLabel: 'Assist Mode',
     assistOff: 'Off',
@@ -111,23 +179,21 @@ const translations = {
     cancel: 'Cancel',
     saveSettings: 'Save Settings',
     saved: 'Saved',
-    feedbackError: 'Error submitting feedback',
+    // Feedback Modal
     feedback: 'Feedback',
-    feedbackThanks: 'Thanks for your feedback!',
-    feedbackThanksDesc: "We appreciate your input.",
+    feedbackPraise: 'Love It',
+    feedbackBug: 'Bug',
+    feedbackFeature: 'Request',
+    feedbackGeneral: 'Other',
+    feedbackPlaceholder: 'Tell us what you think…',
+    feedbackRating: 'Overall experience (optional)',
+    feedbackEmailPlaceholder: 'Email (optional, for replies)',
+    feedbackSubmit: 'Send Feedback',
+    feedbackThanks: 'Thank you! 🙌',
+    feedbackThanksDesc: 'We read every message and use it to improve StyleSnap.',
+    feedbackError: 'Failed to submit. Please try again.',
+    feedbackContactHint: 'Need direct help?',
     close: 'Close',
-    feedbackPlaceholder: 'Tell us what you think...',
-    feedbackRating: 'Rating',
-    feedbackEmailPlaceholder: 'Your email (optional)',
-    feedbackSubmit: 'Submit',
-    feedbackContactHint: "We'll only use your email to follow up.",
-    checkoutError: 'Checkout error. Please try again.',
-    back: 'Back',
-    emailLabel: 'Email',
-    emailHint: "We'll send the license to this email.",
-    loading: 'Loading...',
-    payWith: 'Pay with',
-    secureCheckout: 'Secure checkout',
   },
   zh: {
     // App
@@ -173,7 +239,7 @@ const translations = {
     instant: '📧 即时开通',
     lifetime: '♾️ 终身授权',
     upgradeToPro: '升级到专业版 — $29',
-    learnMore: '访问 stylesnap.dev 了解更多',
+    learnMore: '访问 lucidlibs.dev/stylesnap 了解更多',
     // Checkout
     enterEmailTitle: '请输入您的邮箱',
     enterEmailDesc: '我们将使用此邮箱通过 Dodo Payments 发送您的许可证和收据。',
@@ -213,8 +279,16 @@ const translations = {
     activateLicense: '激活',
     alreadyHaveKey: '已有许可证密钥？',
     needToPurchase: '还没有密钥？立即购买 →',
+    forgotLicenseKey: '忘记许可证密钥？',
     licenseKeyLabel: '许可证密钥',
     devicesLabel: '设备',
+    emailLabel: '邮箱',
+    instanceIdLabel: '实例',
+    activatedAtLabel: '激活时间',
+    expiresAtLabel: '到期时间',
+    licenseExpired: '许可证已过期',
+    licenseDisabled: '许可证已禁用',
+    deactivationConfirm: '确定从此设备移除许可证？您可以稍后重新激活。',
     theme: '主题',
     light: '浅色',
     dark: '深色',
@@ -223,8 +297,18 @@ const translations = {
     aiCodeDesc: '提供您自己的兼容 OpenAI 格式的 API 密钥，以便在复杂的 CSS → 代码转换中启用 AI 后备处理。',
     behavior: '行为',
     showOverlay: '悬停时显示高亮遮罩',
+    showFloatingBtn: '显示网页悬浮按钮',
     autoInspect: '打开扩展时自动开启审查',
     copySound: '复制成功提示音',
+    autoOpenSidePanel: '进入审查时打开侧边栏',
+    // Floating Button Tooltips
+    btnTooltip: 'StyleSnap\n点击：开关侧边栏\n拖拽：移动位置',
+    btnInspect: '审查元素',
+    btnPanel: '开关侧边栏',
+    btnAssist: '切换辅助线模式',
+    btnMode: '循环模式：关闭 → 审查 → 参考线 → 网格  [G]',
+    btnCopyCSS: '复制选中元素的 CSS',
+    btnCollapse: '收起到屏幕边缘',
     // Assist Mode
     assistModeLabel: '辅助线模式',
     assistOff: '关闭',
@@ -237,74 +321,22 @@ const translations = {
     cancel: '取消',
     saveSettings: '保存设置',
     saved: '已保存',
-    feedbackError: '提交反馈时出错',
+    // Feedback Modal
     feedback: '反馈',
-    feedbackThanks: '感谢你的反馈！',
-    feedbackThanksDesc: '我们感谢你的意见。',
+    feedbackPraise: '很棒',
+    feedbackBug: '报告Bug',
+    feedbackFeature: '功能建议',
+    feedbackGeneral: '其他',
+    feedbackPlaceholder: '告诉我们您的想法…',
+    feedbackRating: '总体体验（可选）',
+    feedbackEmailPlaceholder: '邮箱（可选，方便回复）',
+    feedbackSubmit: '提交反馈',
+    feedbackThanks: '感谢您的反馈！🙌',
+    feedbackThanksDesc: '我们会认真阅读每一条反馈，用于持续改进 StyleSnap。',
+    feedbackError: '提交失败，请重试。',
+    feedbackContactHint: '需要直接帮助？',
     close: '关闭',
-    feedbackPlaceholder: '告诉我们你的想法...',
-    feedbackRating: '评分',
-    feedbackEmailPlaceholder: '你的邮箱（可选）',
-    feedbackSubmit: '提交',
-    feedbackContactHint: '我们只会用你的邮箱进行后续联系。',
-    checkoutError: '结账出错，请重试。',
-    back: '返回',
-    emailLabel: '邮箱',
-    emailHint: '我们会把授权码发到这个邮箱。',
-    loading: '加载中...',
-    payWith: '支付方式',
-    secureCheckout: '安全结账',
   }
 }
 
-type TranslationKey = keyof typeof translations.en
-
-interface I18nContextType {
-  lang: Language
-  setLang: (lang: Language) => void
-  t: (key: TranslationKey, params?: Record<string, string | number>) => string
-}
-
-const I18nContext = createContext<I18nContextType | null>(null)
-
-export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [lang, setLangState] = useState<Language>('en')
-
-  useEffect(() => {
-    chrome.storage.local.get(['language']).then(res => {
-      if (res.language === 'zh' || res.language === 'en') {
-        setLangState(res.language)
-      } else {
-        const browserLang = navigator.language.startsWith('zh') ? 'zh' : 'en'
-        setLangState(browserLang)
-      }
-    })
-  }, [])
-
-  const setLang = (newLang: Language) => {
-    setLangState(newLang)
-    chrome.storage.local.set({ language: newLang })
-  }
-
-  const t = (key: TranslationKey, params?: Record<string, string | number>) => {
-    let str = translations[lang][key] || translations.en[key] || key
-    if (params) {
-      Object.entries(params).forEach(([k, v]) => {
-        str = str.replace(`{${k}}`, String(v))
-      })
-    }
-    return str
-  }
-
-  return (
-    <I18nContext.Provider value={{ lang, setLang, t }}>
-      {children}
-    </I18nContext.Provider>
-  )
-}
-
-export const useI18n = () => {
-  const ctx = useContext(I18nContext)
-  if (!ctx) throw new Error('useI18n must be used within I18nProvider')
-  return ctx
-}
+export type TranslationKey = keyof typeof translations.en

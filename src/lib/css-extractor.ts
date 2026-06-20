@@ -5,6 +5,7 @@
 import { CSSPropertyMap, ParsedCSS } from '@/shared/types'
 import { CSS_KEY_PROPERTIES, CSS_PROPERTIES_TO_SKIP } from '@/shared/constants'
 import { cssToTailwind } from './tailwind-mapper'
+import { extractResponsiveStyles, extractPseudoStyles } from './css-rule-parser'
 
 // Browser default values that are meaningless to show
 const BROWSER_DEFAULTS: CSSPropertyMap = {
@@ -179,12 +180,18 @@ export function parseElement(el: Element): ParsedCSS {
   const selector = getSelector(el)
   const { classes, matchRate } = cssToTailwind(styles)
 
+  // Extract responsive (@media) and pseudo-class styles from stylesheets
+  const responsiveStyles = extractResponsiveStyles(el)
+  const pseudoStyles = extractPseudoStyles(el)
+
   return {
     selector,
     styles,
-    html: el.outerHTML.slice(0, 500),   // light preview
+    html: el.outerHTML.slice(0, 500),
     tailwindClasses: classes,
     tailwindMatchRate: matchRate,
+    responsiveStyles: Object.keys(responsiveStyles).length > 0 ? responsiveStyles : undefined,
+    pseudoStyles: Object.keys(pseudoStyles).length > 0 ? pseudoStyles : undefined,
   }
 }
 

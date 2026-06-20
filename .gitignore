@@ -38,6 +38,12 @@ push_out.txt
 
 # Test artifacts
 coverage/
+test-results/
+test-screenshot*.png
+screenshot*.png
+
+# Generated icons (kept in public/icons/ for manifest; ignore src/assets duplicates)
+src/assets/icons/
 
 # Generated icons (kept in public/icons/ for manifest; ignore src/assets/icons duplicates)
 src/assets/icons/

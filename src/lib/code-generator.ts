@@ -189,3 +189,53 @@ function formatCSSForScope(css: string): string {
     .map(l => '  ' + l)
     .join('\n')
 }
+
+// ─── Responsive & Pseudo-class CSS Generators ──────────────────
+
+/** Format responsiveStyles (from @media rules) into a CSS string */
+export function formatResponsiveCSS(
+  responsiveStyles: Record<string, CSSPropertyMap>,
+  selector: string
+): string {
+  const blocks: string[] = []
+  for (const [media, styles] of Object.entries(responsiveStyles)) {
+    const props = Object.entries(styles)
+      .map(([k, v]) => `  ${k}: ${v};`)
+      .join('\n')
+    blocks.push(`${media} {\n  ${selector} {\n${props}\n  }\n}`)
+  }
+  return blocks.join('\n\n')
+}
+
+/** Format pseudoStyles (:hover etc.) into a CSS string */
+export function formatPseudoCSS(
+  pseudoStyles: Record<string, CSSPropertyMap>,
+  selector: string
+): string {
+  const blocks: string[] = []
+  for (const [pseudo, styles] of Object.entries(pseudoStyles)) {
+    const props = Object.entries(styles)
+      .map(([k, v]) => `  ${k}: ${v};`)
+      .join('\n')
+    blocks.push(`${selector}${pseudo} {\n${props}\n}`)
+  }
+  return blocks.join('\n\n')
+}
+
+/**
+ * Generate additional CSS string (responsive + pseudo) to append to main CSS.
+ * Used by the side panel when exporting code.
+ */
+export function generateAdditionalCSS(
+  parsed: { responsiveStyles?: Record<string, CSSPropertyMap>; pseudoStyles?: Record<string, CSSPropertyMap>; selector?: string }
+): string {
+  const parts: string[] = []
+  const selector = parsed.selector || '.element'
+  if (parsed.responsiveStyles && Object.keys(parsed.responsiveStyles).length > 0) {
+    parts.push(formatResponsiveCSS(parsed.responsiveStyles, selector))
+  }
+  if (parsed.pseudoStyles && Object.keys(parsed.pseudoStyles).length > 0) {
+    parts.push(formatPseudoCSS(parsed.pseudoStyles, selector))
+  }
+  return parts.join('\n\n')
+}

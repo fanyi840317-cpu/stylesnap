@@ -15,6 +15,10 @@ export interface ParsedCSS {
   componentCSS?: string
   tailwindClasses?: string[]
   tailwindMatchRate?: number
+  /** @media responsive styles — key = media query string */
+  responsiveStyles?: Record<string, CSSPropertyMap>
+  /** Pseudo-class styles — key = pseudo class name e.g. ":hover" */
+  pseudoStyles?: Record<string, CSSPropertyMap>
 }
 
 export interface ElementInfo {
