@@ -4,7 +4,7 @@ import {
   Zap, AlertCircle
 } from 'lucide-react'
 import { CodeBlock }    from '../components/CodeBlock'
-import { generateReactComponent, generateVueComponent } from '../../lib/code-generator'
+import { generateReactComponent, generateVueComponent, generateAdditionalCSS } from '../../lib/code-generator'
 import { cssToTailwind }   from '../../lib/tailwind-mapper'
 import type { ParsedCSS, LicenseStatus } from '../../shared/types'
 import { useI18n } from '@/lib/i18n'
@@ -38,10 +38,11 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
     if (!element) return { code: '// Select an element to export', language: 'js' }
 
     const { styles, html, selector } = element
+    const additionalCSS = generateAdditionalCSS(element)
     const cssText = Object.entries(styles)
       .map(([k, v]) => `  ${k}: ${v};`)
       .join('\n')
-    const fullCSS = `${selector ?? '.component'} {\n${cssText}\n}`
+    const fullCSS = `${selector ?? '.component'} {\n${cssText}\n}${additionalCSS ? '\n\n' + additionalCSS : ''}`
 
     switch (format) {
       case 'tailwind': {
@@ -51,8 +52,9 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
           ? `\n/* Unmatched (${(100 - matchRate).toFixed(0)}%): */\n` +
             unmatchedEntries.map(([k, v]) => `/* ${k}: ${v}; */`).join('\n')
           : ''
+        const additionalBlock = additionalCSS ? `\n\n/* Additional CSS (responsive/pseudo): */\n${additionalCSS}` : ''
         return {
-          code: `/* ${matchRate.toFixed(0)}% matched via Tailwind */\n<div className="${classes.join(' ')}">\n  {/* ... */}\n</div>${unmatchedCSS}`,
+          code: `/* ${matchRate.toFixed(0)}% matched via Tailwind */\n<div className="${classes.join(' ')}">\n  {/* ... */}\n</div>${unmatchedCSS}${additionalBlock}`,
           language: 'jsx',
         }
       }
@@ -68,7 +70,7 @@ export const ExportTab: React.FC<ExportTabProps> = ({ element, license, onUpgrad
         }
       case 'css-module': {
         const className = (selector ?? '.component').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+/, '')
-        const mod = `.${className} {\n${cssText}\n}`
+        const mod = `.${className} {\n${cssText}\n}${additionalCSS ? '\n\n' + additionalCSS : ''}`
         const usage = `import styles from './Component.module.css'\n\n<div className={styles.${className}}>\n  {/* ... */}\n</div>`
         return {
           code: `${mod}\n\n/* Usage */\n${usage}`,

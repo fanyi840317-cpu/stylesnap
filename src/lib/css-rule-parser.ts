@@ -53,12 +53,6 @@ function styleDeclToMap(style: CSSStyleDeclaration): CSSPropertyMap {
 
 // ── Responsive styles (@media) ──────────────────────────────────────────────
 
-export interface ResponsiveEntry {
-  /** The @media query string, e.g. "(min-width: 768px)" */
-  media: string
-  styles: CSSPropertyMap
-}
-
 /**
  * Extract styles from @media rules that match the current viewport.
  *
@@ -163,6 +157,8 @@ export function extractPseudoStyles(el: Element): Record<string, CSSPropertyMap>
   return result
 }
 
+
+
 // ── Element selector helpers ───────────────────────────────────────────────
 
 /** Get all CSS selectors that could match this element */
@@ -182,23 +178,4 @@ function getSelectorsForElement(el: Element): string[] {
   }
 
   return selectors
-}
-
-/** Build a selector for the element (same logic as css-extractor.ts getSelector) */
-export function getElementSelector(el: Element): string {
-  if (el.id) return `#${el.id}`
-
-  const classes = Array.from(el.classList).slice(0, 3)
-  if (classes.length > 0) {
-    return `${el.tagName.toLowerCase()}.${classes.join('.')}`
-  }
-
-  // nth-child
-  const parent = el.parentElement
-  if (parent) {
-    const index = Array.from(parent.children).indexOf(el) + 1
-    return `${el.tagName.toLowerCase()}:nth-child(${index})`
-  }
-
-  return el.tagName.toLowerCase()
 }
