@@ -1,37 +1,39 @@
 /* StyleSnap Floating Button Styles */
-/* Extracted from content/index.ts injectFloatingBtnStyles() — loaded as static CSS to avoid CSP issues */
+/* Maps 1-to-1 to DOM created by floating-button.ts createFloatingButton() */
 
+/* ── Outer container (fixed position) ─────────────────── */
 #stylesnap-floating-btn {
   position: fixed !important;
   bottom: 24px !important;
   right: 24px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  flex-direction: row-reverse !important;
   padding: 0 !important;
-  border-radius: 50% !important;
-  cursor: pointer !important;
-  z-index: 2147483647 !important;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s, opacity 0.3s ease !important;
-  user-select: none !important;
+  margin: 0 !important;
   border: none !important;
   outline: none !important;
   background: transparent !important;
-  overflow: visible !important;
-  display: flex !important;
-  align-items: center !important;
+  cursor: pointer !important;
+  z-index: 2147483647 !important;
+  user-select: none !important;
   box-sizing: border-box !important;
-  width: 44px !important;
-  height: 44px !important;
+  width: auto !important;
+  height: auto !important;
   opacity: 0.45 !important;
+  transition: opacity 0.3s ease !important;
+  overflow: visible !important;
 }
 
 #stylesnap-floating-btn:hover,
-#stylesnap-floating-btn.is-active,
-#stylesnap-floating-btn.is-dragging {
+#stylesnap-floating-btn.is-active {
   opacity: 1 !important;
 }
 
-/* Inner circle */
-#stylesnap-floating-btn-inner {
-  position: relative !important;
+/* ── Main ball (the round gradient button) ────────────── */
+.stylesnap-main-ball {
+  position: relative !important; /* containing block for .stylesnap-mode-badge */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -42,33 +44,21 @@
   z-index: 2 !important;
   box-sizing: border-box !important;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45) !important;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: visible !important;
+  flex-shrink: 0 !important;
 }
 
-#stylesnap-floating-btn:hover #stylesnap-floating-btn-inner,
-#stylesnap-floating-btn.is-dragging #stylesnap-floating-btn-inner {
+#stylesnap-floating-btn:hover .stylesnap-main-ball {
   transform: scale(1.06) translateY(-2px) !important;
 }
 
-#stylesnap-floating-btn.is-active #stylesnap-floating-btn-inner {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.55) !important;
+#stylesnap-floating-btn:active .stylesnap-main-ball {
+  transform: scale(0.92) !important;
 }
 
-/* Spinning ring (active state) */
-#stylesnap-floating-btn-ring {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: 50% !important;
-  overflow: hidden !important;
-  z-index: 1 !important;
-  pointer-events: none !important;
-}
-
-#stylesnap-floating-btn-ring::before {
+/* Spinning ring (visible when .is-active) */
+.stylesnap-main-ball::before {
   content: '' !important;
   position: absolute !important;
   top: 50% !important;
@@ -76,20 +66,32 @@
   width: 140% !important;
   height: 140% !important;
   background: conic-gradient(transparent, #6ee7b7, transparent 30%) !important;
+  border-radius: 50% !important;
   transform-origin: center center !important;
   animation: stylesnap-btn-rotate 2s linear infinite !important;
   display: none !important;
+  z-index: -1 !important;
+  transform: translate(-50%, -50%) !important;
 }
 
-#stylesnap-floating-btn.is-active #stylesnap-floating-btn-ring::before {
+#stylesnap-floating-btn.is-active .stylesnap-main-ball::before {
   display: block !important;
 }
 
-/* Mode badge (bottom-right corner of ball) */
+/* Clock icon inside main ball */
+.stylesnap-main-ball > svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: #fff !important;
+  z-index: 1 !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── Mode badge (bottom-right corner of the ball) ─────── */
 .stylesnap-mode-badge {
   position: absolute !important;
-  bottom: -1px !important;
-  right: -1px !important;
+  bottom: -2px !important;
+  right: -2px !important;
   width: 18px !important;
   height: 18px !important;
   background: transparent !important;
@@ -102,6 +104,7 @@
   pointer-events: none !important;
   padding: 0 !important;
   transition: background 0.2s !important;
+  box-sizing: border-box !important;
 }
 
 .stylesnap-mode-badge svg {
@@ -110,123 +113,48 @@
   color: #fff !important;
 }
 
-/* Logo icon */
-.stylesnap-logo-icon {
-  width: 26px !important;
-  height: 26px !important;
-  background: #fff !important;
-  color: #6366f1 !important;
-  border-radius: 8px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 15px !important;
-  font-weight: 900 !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  font-family: ui-sans-serif, system-ui, sans-serif !important;
-  box-sizing: border-box !important;
-  transition: color 0.2s, transform 0.2s !important;
-}
-
-#stylesnap-floating-btn:active .stylesnap-logo-icon {
-  transform: scale(0.9) !important;
-}
-
-/* Floating panel */
-#stylesnap-floating-panel {
-  position: absolute !important;
-  right: 52px !important;
-  bottom: 0 !important;
-  transform: scale(0.9) translateX(4px) !important;
-  transform-origin: right bottom !important;
-  background: rgba(15, 23, 42, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 14px !important;
-  padding: 6px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 2px !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15) !important;
-  z-index: 1 !important;
-  pointer-events: none !important;
-  white-space: nowrap !important;
-  backdrop-filter: blur(8px) !important;
-}
-
-/* hover bridge: wider invisible area so panel doesn't disappear */
-#stylesnap-floating-panel::after {
-  content: '' !important;
-  position: absolute !important;
-  right: -20px !important;
-  bottom: -8px !important;
-  top: -8px !important;
-  width: 30px !important;
-  background: transparent !important;
-}
-
-/* Panel items */
-.stylesnap-panel-item {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 9px !important;
-  background: transparent !important;
-  color: #94a3b8 !important;
-  border: none !important;
-  cursor: pointer !important;
-  transition: all 0.12s !important;
-  position: relative !important;
-}
-
-.stylesnap-panel-item:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #e2e8f0 !important;
-}
-
-.stylesnap-panel-item svg {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-.stylesnap-panel-item:active {
-  transform: scale(0.92) !important;
-}
-
-/* Mode button group (vertical column) */
+/* ── Mode button group (vertical column, left of ball) ── */
 .stylesnap-mode-group {
   display: flex !important;
   flex-direction: column !important;
   gap: 2px !important;
-  padding: 2px !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-radius: 10px !important;
+  padding: 4px !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35) !important;
 }
 
+/* ── Individual mode button ───────────────────────────── */
 .stylesnap-mode-btn {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 7px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
   background: transparent !important;
   color: #64748b !important;
   border: none !important;
   cursor: pointer !important;
   transition: all 0.12s !important;
   position: relative !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .stylesnap-mode-btn:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   color: #94a3b8 !important;
 }
 
+.stylesnap-mode-btn:active {
+  transform: scale(0.88) !important;
+}
+
+/* Active state — per-mode color accents */
 .stylesnap-mode-btn.is-active {
   background: rgba(99, 102, 241, 0.2) !important;
   color: #e2e8f0 !important;
@@ -251,7 +179,7 @@
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3) !important;
 }
 
-/* preferred (last used) — subtle hint, NOT active */
+/* Preferred (last-used) hint — subtle ring, NOT active */
 .stylesnap-mode-btn.is-preferred {
   box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.25) !important;
 }
@@ -267,47 +195,15 @@
   background: rgba(255, 255, 255, 0.45) !important;
 }
 
+/* Icon inside mode button */
 .stylesnap-mode-btn svg {
-  width: 14px !important;
-  height: 14px !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
 }
 
-.stylesnap-mode-btn:active {
-  transform: scale(0.88) !important;
-}
-
-/* Panel divider */
-.stylesnap-panel-divider {
-  height: 1px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  margin: 2px 6px !important;
-}
-
-/* Compare highlight (Bug 3) */
-.stylesnap-compare-highlight {
-  outline: 2px dashed #fbbf24 !important;
-  outline-offset: -1px !important;
-  transition: outline 0.1s ease !important;
-  position: relative !important;
-}
-
-.stylesnap-compare-highlight::after {
-  content: '↔ Compare' !important;
-  position: absolute !important;
-  top: -20px !important;
-  left: 0 !important;
-  background: rgba(251, 191, 36, 0.9) !important;
-  color: #0f172a !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  pointer-events: none !important;
-  z-index: 2147483646 !important;
-}
-
-/* Rotate animation */
+/* ── Rotate animation for active ring ────────────────── */
 @keyframes stylesnap-btn-rotate {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  0%   { transform: translate(-50%, -50%) rotate(0deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }

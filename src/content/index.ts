@@ -7,6 +7,7 @@ import { parseElement, extractComponentCSS, extractComponentHTML } from '@/lib/c
 import { extractDesignTokens } from '@/lib/token-extractor'
 import { collectAnnotatableElements } from '@/lib/annotator'
 import type { ParsedCSS } from '@/shared/types'
+import { createFloatingButton } from '@/content/modules/floating-button'
 
 // ─── State ────────────────────────────────────────────────────────────
 
@@ -399,24 +400,7 @@ function enableInspector() {
   document.addEventListener('keydown', onKeyDown, true)
   document.addEventListener('scroll', onScroll, true)
 
-  const btn = document.getElementById(FLOATING_BTN_ID)
-  if (btn) {
-    chrome.storage.local.get(['language'], (res) => {
-      const isEn = res.language === 'en'
-      const stopText = isEn ? 'Stop Inspecting' : '停止审查'
-      
-      btn.style.background = 'linear-gradient(135deg, #10b981, #059669)'
-      btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)'
-      btn.innerHTML = `
-        <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-          </svg>
-          <span>${stopText}</span>
-        </div>
-      `
-    })
-  }
+
 }
 
 function disableInspector() {
@@ -431,109 +415,16 @@ function disableInspector() {
   removeHighlight()
   hideOverlay()
 
-  const btn = document.getElementById(FLOATING_BTN_ID)
-  if (btn) {
-    chrome.storage.local.get(['language'], (res) => {
-      const isEn = res.language === 'en'
-      const startText = isEn ? 'Inspect Style' : '审查样式'
-      
-      btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-      btn.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)'
-      btn.innerHTML = `
-        <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m21 21-4.35-4.35" />
-            <circle cx="11" cy="11" r="8" />
-          </svg>
-          <span>${startText}</span>
-        </div>
-      `
-    })
-  }
+
 }
 
 // ─── Floating Button UI ────────────────────────────────────────────────
 
-const FLOATING_BTN_ID = 'stylesnap-floating-btn'
-
-function initFloatingButton() {
-  if (document.getElementById(FLOATING_BTN_ID)) return
-
-  const btn = document.createElement('button')
-  btn.id = FLOATING_BTN_ID
-  btn.setAttribute('data-stylesnap', 'true')
-  
-  // Try to load user's preferred language for the floating button
-  chrome.storage.local.get(['language'], (res) => {
-    const isEn = res.language === 'en'
-    const startText = isEn ? 'Inspect Style' : '审查样式'
-    
-    btn.innerHTML = `
-      <div style="display:flex; align-items:center; gap:6px; font-family:system-ui, sans-serif; font-size:14px; font-weight:600;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m21 21-4.35-4.35" />
-          <circle cx="11" cy="11" r="8" />
-        </svg>
-        <span>${startText}</span>
-      </div>
-    `
-  })
-  
-  // Style the button directly to ensure it works regardless of external CSS
-  Object.assign(btn.style, {
-    position: 'fixed',
-    bottom: '24px',
-    right: '24px',
-    width: 'auto',
-    padding: '0 16px',
-    height: '44px',
-    borderRadius: '22px',
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#ffffff',
-    border: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: '2147483647',
-    transition: 'transform 0.2s, filter 0.2s',
-    userSelect: 'none'
-  })
-
-  btn.addEventListener('mouseenter', () => {
-    btn.style.transform = 'scale(1.05) translateY(-2px)'
-    btn.style.filter = 'brightness(1.1)'
-  })
-  btn.addEventListener('mouseleave', () => {
-    btn.style.transform = 'scale(1) translateY(0)'
-    btn.style.filter = 'brightness(1)'
-  })
-
-  btn.addEventListener('click', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    // Toggle inspector
-    if (isActive) {
-      disableInspector()
-      chrome.runtime.sendMessage({ type: 'DISABLE_INSPECTOR' }).catch(() => {})
-    } else {
-      enableInspector()
-      chrome.runtime.sendMessage({ type: 'INIT_INSPECTOR' }).catch(() => {})
-      // Try to open side panel
-      chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' }).catch(() => {})
-    }
-  })
-
-  document.body.appendChild(btn)
-}
-
 // Initialize on load
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initFloatingButton)
+  document.addEventListener('DOMContentLoaded', () => createFloatingButton())
 } else {
-  initFloatingButton()
+  createFloatingButton()
 }
 
 // ─── Message handling ─────────────────────────────────────────────────
