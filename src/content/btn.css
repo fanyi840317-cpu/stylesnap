@@ -124,6 +124,18 @@
   border-radius: 12px !important;
   backdrop-filter: blur(8px) !important;
   box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35) !important;
+  /* Collapsed by default */
+  opacity: 0 !important;
+  transform: translateX(16px) scale(0.92) !important;
+  pointer-events: none !important;
+  transform-origin: right center !important;
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#stylesnap-floating-btn.is-active .stylesnap-mode-group {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+  pointer-events: auto !important;
 }
 
 /* ── Individual mode button ───────────────────────────── */
