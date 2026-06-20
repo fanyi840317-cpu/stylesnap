@@ -8,12 +8,12 @@ import { extractDesignTokens } from '@/lib/token-extractor'
 import { collectAnnotatableElements } from '@/lib/annotator'
 import type { ParsedCSS } from '@/shared/types'
 import { createFloatingButton } from '@/content/modules/floating-button'
+import { inspectMode, setInspectModeValue, setLastHighlighted, setLockedElement, lastHighlighted, lockedElement } from '@/content/modules/state'
 
 // ─── State ────────────────────────────────────────────────────────────
+// isActive/lastHighlighted/lockedElement are now imported from @/content/modules/state
+// assistMode is derived from inspectMode locally for UI (sync with state.ts assistMode())
 
-let isActive = false
-let lastHighlighted: Element | null = null
-let lockedElement: Element | null = null
 let assistMode = 1 // 0: Off, 1: Guidelines (Crosshairs), 2: Grid (Outlines)
 const OVERLAY_ID = 'stylesnap-overlay'
 const HIGHLIGHT_CLASS = 'stylesnap-highlight'
@@ -160,13 +160,13 @@ function highlightElement(el: Element) {
   if (lockedElement && el !== lockedElement) return
   removeHighlight()
   el.classList.add(HIGHLIGHT_CLASS)
-  lastHighlighted = el
+  setLastHighlighted(el)
 }
 
 function removeHighlight() {
   if (lastHighlighted && lastHighlighted !== lockedElement) {
     lastHighlighted.classList.remove(HIGHLIGHT_CLASS)
-    lastHighlighted = null
+    setLastHighlighted(null)
   }
 }
 
@@ -174,10 +174,10 @@ function lockElement(el: Element) {
   if (lockedElement) {
     lockedElement.classList.remove(LOCKED_CLASS)
   }
-  lockedElement = el
+  setLockedElement(el)
   el.classList.add(LOCKED_CLASS)
   el.classList.remove(HIGHLIGHT_CLASS)
-  lastHighlighted = null
+  setLastHighlighted(null)
 
   const overlay = document.getElementById(OVERLAY_ID)
   if (overlay) {
@@ -188,7 +188,7 @@ function lockElement(el: Element) {
 function unlockElement() {
   if (lockedElement) {
     lockedElement.classList.remove(LOCKED_CLASS)
-    lockedElement = null
+    setLockedElement(null)
   }
   
   const overlay = document.getElementById(OVERLAY_ID)
@@ -200,7 +200,7 @@ function unlockElement() {
 // ─── Event handlers ───────────────────────────────────────────────────
 
 function onMouseMove(e: MouseEvent) {
-  if (!isActive || lockedElement) return
+  if (inspectMode === 0 || lockedElement) return
   const el = document.elementFromPoint(e.clientX, e.clientY)
   if (!el || el.closest('[data-stylesnap]')) return
   if (el === lastHighlighted) return
@@ -223,7 +223,7 @@ function onMouseMove(e: MouseEvent) {
 }
 
 function onClick(e: MouseEvent) {
-  if (!isActive) return
+  if (inspectMode === 0) return
   const el = document.elementFromPoint(e.clientX, e.clientY)
   
   // 如果点击的是 overlay 内部，不要触发解锁或新元素的锁定
@@ -290,7 +290,7 @@ function onKeyDown(e: KeyboardEvent) {
     return
   }
 
-  if (isActive && (e.key === 'g' || e.key === 'G')) {
+  if (inspectMode > 0 && (e.key === 'g' || e.key === 'G')) {
     e.preventDefault()
     e.stopPropagation()
     assistMode = (assistMode + 1) % 3
@@ -314,7 +314,7 @@ function onKeyDown(e: KeyboardEvent) {
     return
   }
 
-  if (e.key === 'Escape' && isActive) {
+  if (e.key === 'Escape' && inspectMode > 0) {
     e.preventDefault()
     e.stopPropagation()
     
@@ -371,7 +371,7 @@ function showToast(message: string) {
 }
 
 function onScroll() {
-  if (!isActive) return
+  if (inspectMode === 0) return
   const target = lockedElement || lastHighlighted
   if (target) {
     updateGuides(target.getBoundingClientRect())
@@ -381,8 +381,8 @@ function onScroll() {
 // ─── Inspector control ────────────────────────────────────────────────
 
 function enableInspector() {
-  if (isActive) return
-  isActive = true
+  if (inspectMode > 0) return
+  setInspectModeValue(1)
   initGuides()
   
   // Load assistMode from settings
@@ -394,29 +394,23 @@ function enableInspector() {
     }
     updateAssistModeUI()
   })
-
-  document.addEventListener('mousemove', onMouseMove, true)
-  document.addEventListener('click', onClick, true)
-  document.addEventListener('keydown', onKeyDown, true)
-  document.addEventListener('scroll', onScroll, true)
-
-
 }
 
 function disableInspector() {
-  isActive = false
+  setInspectModeValue(0)
   assistMode = 0
   updateAssistModeUI()
-  document.removeEventListener('mousemove', onMouseMove, true)
-  document.removeEventListener('click', onClick, true)
-  document.removeEventListener('keydown', onKeyDown, true)
-  document.removeEventListener('scroll', onScroll, true)
   unlockElement()
   removeHighlight()
   hideOverlay()
-
-
 }
+
+// ─── Event listeners (registered once at script load) ─────────────────
+// Handlers gate themselves with `inspectMode === 0` check at the top.
+document.addEventListener('mousemove', onMouseMove, true)
+document.addEventListener('click', onClick, true)
+document.addEventListener('keydown', onKeyDown, true)
+document.addEventListener('scroll', onScroll, true)
 
 // ─── Floating Button UI ────────────────────────────────────────────────
 
@@ -434,7 +428,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     if (changes.language) {
       const lang = changes.language.newValue
       // Update floating button text
-      if (isActive) {
+      if (inspectMode > 0) {
         enableInspector() // Re-apply active state UI
       } else {
         disableInspector() // Re-apply inactive state UI
@@ -508,6 +502,6 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload?: unknown
 // ── Automation bridge (for MCP testing) ─────────────────────
 // Allow MCP tools to control inspector via CustomEvent on document.body
 document.addEventListener('__styleSnap_toggleInspector', () => {
-  if (isActive) disableInspector()
+  if (inspectMode > 0) disableInspector()
   else enableInspector()
 })

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>StyleSnap 响应式 & 伪类测试页面</title>
+  <style>
+    /* 基础样式 */
+    .demo-btn {
+      background: #3b82f6;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    /* 伪类：hover */
+    .demo-btn:hover {
+      background: #1d4ed8;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    /* 伪类：active */
+    .demo-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 伪类：focus */
+    .demo-btn:focus {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    /* 响应式：平板 */
+    @media (min-width: 768px) {
+      .demo-btn {
+        padding: 12px 24px;
+        font-size: 16px;
+      }
+    }
+
+    /* 响应式：桌面 */
+    @media (min-width: 1024px) {
+      .demo-btn {
+        padding: 16px 32px;
+        font-size: 18px;
+        background: #8b5cf6;
+      }
+    }
+
+    /* 卡片样式 */
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body style="font-family: system-ui; padding: 40px; background: #f9fafb;">
+
+  <h1>StyleSnap 测试页面</h1>
+  <p>用于测试响应式断点和交互状态提取功能。</p>
+
+  <!-- 测试按钮 -->
+  <button class="demo-btn" id="testBtn">
+    测试按钮 (Hover / Active / Focus)
+  </button>
+
+  <div style="margin-top: 24px;">
+    <p>尝试：</p>
+    <ol>
+      <li>点击 StyleSnap 浮动球激活检查模式</li>
+      <li>将鼠标悬停在按钮上，然后点击锁定</li>
+      <li>查看生成的代码是否包含 <code>:hover</code> 样式</li>
+      <li>调整浏览器窗口大小，再提取一次，看是否包含 <code>@media</code> 样式</li>
+    </ol>
+  </div>
+
+  <!-- 测试卡片 -->
+  <div class="card" id="testCard">
+    <h3>测试卡片</h3>
+    <p>这个卡片有 hover 效果和响应式 padding。</p>
+  </div>
+
+</body>
+</html>
